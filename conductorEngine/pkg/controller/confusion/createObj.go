@@ -1,13 +1,13 @@
-package main
+package confusion
 
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 )
 
 func createDeployment(clientset *kubernetes.Clientset, namespace, name, image string, replicas int32) error {
@@ -83,4 +83,3 @@ func createService(clientset *kubernetes.Clientset, namespace, name string, port
 	fmt.Printf("Service %s created successfully.\n", name)
 	return nil
 }
-
