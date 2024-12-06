@@ -6,6 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/sideChannel_topo_confusion/conductorEngine/pkg/controller/topo"
 )
 
 func main() {
@@ -54,7 +55,7 @@ func main() {
 	duration := 5 * time.Minute
 
 	// Generate traffic map
-	trafficMap := GenerateTrafficMap(promApi, namespace, queryTime, duration)
+	trafficMap := topo.GenerateTrafficMap(promApi, namespace, queryTime, duration)
 
 	// Print traffic map
 	for id, node := range trafficMap {
