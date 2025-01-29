@@ -9,7 +9,7 @@ type Topo struct {
 	Edges map[string]topo.Edge
 }
 
-func shaping(root topo.Root) Topo {
+func Shaped(root topo.Root) Topo {
 	topo := Topo{
 		Nodes: make(map[string]topo.Node),
 		Edges: make(map[string]topo.Edge),

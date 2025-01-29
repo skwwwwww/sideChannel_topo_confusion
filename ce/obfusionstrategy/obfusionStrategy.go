@@ -1,4 +1,4 @@
-package obfusionstrategy
+package main
 
 import (
 	"bytes"

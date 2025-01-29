@@ -1,153 +1,152 @@
 package criticalpath
 
 import (
-	"fmt"
-
 	topo "github.com/sideChannel_topo_confusion/ce/topo"
 )
 
-// 计算节点的度中心性
-func calculateDegreeCentrality(edges map[string]topo.Edge) map[string]int {
+type PathInfo struct {
+	Nodes        []string
+	SumDegree    int
+	KeyNodeCount int
+}
+
+// 1. 计算节点的度-> 改进：将不同的指标赋予不同的权值，求和后赋值给边
+func calculateDegrees(t Topo) map[string]int {
 	degrees := make(map[string]int)
-	for _, edge := range edges {
+	for _, edge := range t.Edges {
 		degrees[edge.Data.Source]++
 		degrees[edge.Data.Target]++
 	}
 	return degrees
 }
 
-// 识别关键节点
-func findKeyNodes(degrees map[string]int) []string {
-	maxDegree := -1
-	for _, degree := range degrees {
-		if degree > maxDegree {
-			maxDegree = degree
+// 2. 找到图中度最大的节点
+func findKeyNodes(degrees map[string]int) map[string]bool {
+	maxDegree := 0
+	for _, d := range degrees {
+		if d > maxDegree {
+			maxDegree = d
 		}
 	}
 
-	var keyNodes []string
-	for nodeID, degree := range degrees {
-		if degree == maxDegree {
-			keyNodes = append(keyNodes, nodeID)
+	keyNodes := map[string]bool{}
+	for node, d := range degrees {
+		if d == maxDegree {
+			keyNodes[node] = true
+		} else {
+			keyNodes[node] = false
 		}
 	}
+
 	return keyNodes
 }
 
-type CriticalPath struct {
-	Edges map[string]topo.Edge
-	Nodes map[string]topo.Node
-}
-
-// 识别关键路径(其实应该加一个参数，用于区别不同的应用类型)
-func findCriticalPaths(topology Topo, degrees map[string]int, keyNodes []string) []CriticalPath {
-	// 使用DFS来遍历所有可能的路径
-	var bestPaths []CriticalPath
-	var bestDegreeSum int
-
-	// 为了方便查找关键节点，使用一个集合（map）
-	keyNodeSet := make(map[string]struct{})
-	for _, nodeID := range keyNodes {
-		keyNodeSet[nodeID] = struct{}{}
-	}
-
-	// 辅助函数：DFS遍历路径
-	var dfs func(nodeID string, visited map[string]bool, path []string, degreeSum int)
-	dfs = func(nodeID string, visited map[string]bool, path []string, degreeSum int) {
-		// 如果当前节点已被访问过，则返回
-		if visited[nodeID] {
-			return
-		}
-
-		// 标记当前节点为已访问
-		visited[nodeID] = true
-
-		// 将当前节点添加到路径中，并累加其度数
-		path = append(path, nodeID)
-		degreeSum += degrees[nodeID]
-
-		// 如果当前路径包含关键节点，则增加关键节点计数
-		keyNodeCount := 0
-		for _, node := range path {
-			if _, exists := keyNodeSet[node]; exists {
-				keyNodeCount++
-			}
-		}
-
-		if len(bestPaths) == 0 || keyNodeCount > len(bestPaths[0].Nodes) || (keyNodeCount == len(bestPaths[0].Nodes) && degreeSum > bestDegreeSum) {
-			// 找到更好的路径，更新最佳路径列表
-			if len(bestPaths) == 0 || keyNodeCount > len(bestPaths[0].Nodes) || degreeSum > bestDegreeSum {
-				bestPaths = []CriticalPath{}
-			}
-			// 将新的路径添加到结果中
-			criticalPath := CriticalPath{
-				Nodes: make(map[string]topo.Node),
-				Edges: make(map[string]topo.Edge),
-			}
-			for i := 0; i < len(path)-1; i++ {
-				nodeID := path[i]
-				criticalPath.Nodes[nodeID] = topology.Nodes[nodeID]
-				// 找到相应的边
-				for _, edge := range topology.Edges {
-					if edge.Data.Source == nodeID && edge.Data.Target == path[i+1] {
-						criticalPath.Edges[edge.Data.ID] = edge
-					} else if edge.Data.Target == nodeID && edge.Data.Source == path[i+1] {
-						criticalPath.Edges[edge.Data.ID] = edge
-					}
-				}
-			}
-			// 添加路径到结果中
-			bestPaths = append(bestPaths, criticalPath)
-			bestDegreeSum = degreeSum
-		}
-
-		// 递归遍历所有相邻的节点
-		for _, edge := range topology.Edges {
-			if edge.Data.Source == nodeID && !visited[edge.Data.Target] {
-				dfs(edge.Data.Target, visited, path, degreeSum)
-			} else if edge.Data.Target == nodeID && !visited[edge.Data.Source] {
-				dfs(edge.Data.Source, visited, path, degreeSum)
-			}
-		}
-
-		// 回溯，标记当前节点为未访问
-		visited[nodeID] = false
-	}
-
-	// 遍历所有节点，尝试从每个节点开始搜索
-	for nodeID := range topology.Nodes {
+// 3. 枚举所有边
+func generateAllPaths(topo Topo, degrees map[string]int, keyNodes map[string]bool) []PathInfo {
+	var paths []PathInfo
+	for nodeID := range topo.Nodes {
 		visited := make(map[string]bool)
-		dfs(nodeID, visited, nil, 0)
+		visited[nodeID] = true
+		findAllPaths(topo,
+			[]string{nodeID},
+			degrees[nodeID],
+			boolToInt(keyNodes[nodeID]),
+			visited,
+			&paths,
+			degrees,
+			keyNodes)
 	}
-
-	// 返回所有找到的关键路径
-	return bestPaths
+	return paths
 }
 
-func main() {
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func findAllPaths(topo Topo, currentPath []string, currentSum int, currentKeyCount int, visited map[string]bool, paths *[]PathInfo, degrees map[string]int, keyNodes map[string]bool) {
+	currentNode := currentPath[len(currentPath)-1]
+
+	// 记录有效路径（至少包含两个节点）
+	if len(currentPath) >= 2 {
+		*paths = append(*paths, PathInfo{
+			Nodes:        append([]string{}, currentPath...),
+			SumDegree:    currentSum,
+			KeyNodeCount: currentKeyCount,
+		})
+	}
+
+	// 遍历出边
+	for _, edge := range topo.Edges {
+		if edge.Data.Source == currentNode && !visited[edge.Data.Target] {
+			newVisited := make(map[string]bool)
+			for k, v := range visited {
+				newVisited[k] = v
+			}
+			newVisited[edge.Data.Target] = true
+
+			newPath := append(currentPath, edge.Data.Target)
+			newSum := currentSum + degrees[edge.Data.Target]
+			newKeyCount := currentKeyCount
+			if keyNodes[edge.Data.Target] {
+				newKeyCount++
+			}
+
+			findAllPaths(topo, newPath, newSum, newKeyCount, newVisited, paths, degrees, keyNodes)
+		}
+	}
+}
+
+// 寻找关键路径
+func findKeyPaths(allPaths []PathInfo) []PathInfo {
+	if len(allPaths) == 0 {
+		return nil
+	}
+
+	// 找最大度数总和
+	maxSum := 0
+	for _, path := range allPaths {
+		if path.SumDegree > maxSum {
+			maxSum = path.SumDegree
+		}
+	}
+
+	// 筛选候选路径
+	var candidates []PathInfo
+	for _, path := range allPaths {
+		if path.SumDegree == maxSum {
+			candidates = append(candidates, path)
+		}
+	}
+
+	// 找最大关键节点数
+	maxKeyCount := 0
+	for _, path := range candidates {
+		if path.KeyNodeCount > maxKeyCount {
+			maxKeyCount = path.KeyNodeCount
+		}
+	}
+
+	// 最终筛选
+	var keyPaths []PathInfo
+	for _, path := range candidates {
+		if path.KeyNodeCount == maxKeyCount {
+			keyPaths = append(keyPaths, path)
+		}
+	}
+	return keyPaths
+}
+
+func GetCriticalPaths() []PathInfo {
+	// 1. 获取原始拓扑
 	root := topo.GetTopo()
-	//fmt.Print(root)
-	topo := shaping(root)
-	degrees := calculateDegreeCentrality(topo.Edges)
-	keyNodes := findKeyNodes(degrees)
-	//criticalPath := findCriticalPaths(topo, degrees, keyNodes)
-	findCriticalPaths(topo, degrees, keyNodes)
-	//printCriticalPaths(criticalPath, topo)
-}
+	topo := Shaped(root)
 
-// Print the best paths
-func printCriticalPaths(bestPaths []CriticalPath, topo Topo) {
-	for i, path := range bestPaths {
-		fmt.Printf("Critical Path %d:\n", i+1)
-		fmt.Println("Nodes:")
-		for nodeID := range path.Nodes {
-			fmt.Println(topo.Nodes[nodeID].Data.Workload)
-		}
-		fmt.Println("Edges:")
-		for _, edge := range path.Edges {
-			fmt.Printf("Edge ID: %s, Source: %s, Target: %s\n", edge.Data.ID, topo.Nodes[edge.Data.Source].Data.
-				Workload, topo.Nodes[edge.Data.Target].Data.Workload)
-		}
-		fmt.Println("--------------------------------------------------")
-	}
+	// 2. 计算关键节点和路径
+	degrees := calculateDegrees(topo)
+	keyNodes := findKeyNodes(degrees)
+	keyPaths := findKeyPaths(generateAllPaths(topo, degrees, keyNodes))
+	return keyPaths
 }
