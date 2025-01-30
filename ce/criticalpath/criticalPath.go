@@ -139,7 +139,7 @@ func findKeyPaths(allPaths []PathInfo) []PathInfo {
 	return keyPaths
 }
 
-func GetCriticalPaths() []PathInfo {
+func GetCriticalPaths() (Topo, []string, []PathInfo) {
 	// 1. 获取原始拓扑
 	root := topo.GetTopo()
 	topo := Shaped(root)
@@ -148,5 +148,11 @@ func GetCriticalPaths() []PathInfo {
 	degrees := calculateDegrees(topo)
 	keyNodes := findKeyNodes(degrees)
 	keyPaths := findKeyPaths(generateAllPaths(topo, degrees, keyNodes))
-	return keyPaths
+	criticalNodes := []string{}
+	for k, v := range keyNodes {
+		if v == true {
+			criticalNodes = append(criticalNodes, k)
+		}
+	}
+	return topo, criticalNodes, keyPaths
 }

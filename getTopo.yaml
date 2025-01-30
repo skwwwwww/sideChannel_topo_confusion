@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gettopo
+spec:
+  containers:
+  - name: gettopo
+    image: get-topo
+    imagePullPolicy: IfNotPresent

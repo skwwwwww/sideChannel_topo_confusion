@@ -1,0 +1,17 @@
+apiVersion: cloudnative.example.com/v1
+kind: ConfusionStrategy
+metadata:
+  name: example-strategy
+spec:
+  virtualServices:
+    - name: fake-service
+      replicas: 2
+      routes:
+        - target: real-service
+          weight: 50
+  decoyLinks:
+    - source: service-a
+      destination: decoy-service
+  virtualLinks:
+    - source: service-b
+      destination: non-existent-service
