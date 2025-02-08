@@ -60,7 +60,8 @@ func startTrafficHandler(w http.ResponseWriter, r *http.Request) {
 func sendTraffic() {
 	for {
 		for _, node := range downstreamNodes {
-			url := fmt.Sprintf("http://%s/health", node)
+			url := fmt.Sprintf("http://%s", node)
+			fmt.Printf("Url %s\n", url)
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				fmt.Printf("Error creating request to %s: %v\n", node, err)

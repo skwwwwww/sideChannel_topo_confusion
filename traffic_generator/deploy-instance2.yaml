@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: traffic-generator-{{ .INSTANCE_ID }}
+  name: traffic-generator-instance2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: traffic-generator-{{ .INSTANCE_ID }}
+      app: traffic-generator-instance2
   template:
     metadata:
       labels:
-        app: traffic-generator-{{ .INSTANCE_ID }}
+        app: traffic-generator-instance2
     spec:
       containers:
       - name: traffic-generator
