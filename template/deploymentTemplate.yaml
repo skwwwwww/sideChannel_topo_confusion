@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-service-2  # 需替换{{instanceID}}为实际值
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic-service-2  # 必须与template.labels匹配
+  template:
+    metadata:
+      labels:
+        app: traffic-service-2  # 标签选择器依据
+    spec:
+      containers:
+        - name: traffic-generator
+          image: traffic-generator:1.0
+          env:
+            - name: PORT
+              value: "8080"
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3

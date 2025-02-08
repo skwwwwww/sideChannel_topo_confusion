@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	criticalpath "github.com/sideChannel_topo_confusion/ce/criticalpath"
 	appsv1 "k8s.io/api/apps/v1"
@@ -26,6 +27,11 @@ type EnvoyFilterConfig struct {
 	Namespace string
 	App       string
 }
+
+const (
+	maxRetries = 10              // 最大重试次数
+	retryDelay = 3 * time.Second // 基础重试间隔
+)
 
 func GeneralTrafficGenertator() {
 	// 从上一个包获取关键路径
@@ -92,7 +98,7 @@ func GeneralTrafficGenertator() {
 		envoyConfig := EnvoyFilterConfig{}
 		envoyConfig.App = "traffic-service-" + instanceID
 		envoyConfig.Namespace = namespace
-		envoyFilter := createEnvoyFilter(envoyConfig, instanceID)
+		envoyFilter := createEnvoyFilter(envoyConfig, envoyConfig.App)
 		// 创建 EnvoyFilter
 		_, err = client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 		if err != nil {
@@ -120,8 +126,8 @@ func GeneralTrafficGenertator() {
 		hostAndPorts = append(hostAndPorts, hostAndPort)
 	}
 
-	for i, v := range keyPaths {
-		instanceID := fmt.Sprintf("S%d", i)
+	for _, v := range keyPaths {
+		//instanceID := fmt.Sprintf("S%d", i)
 		keyPathLen := len(v.Nodes)
 		node := v.Nodes[keyPathLen-1]
 		namespace := topo.Nodes[node].Data.Namespace
@@ -130,7 +136,7 @@ func GeneralTrafficGenertator() {
 		envoyConfig.Namespace = namespace
 		envoyConfig.App = app
 
-		envoyFilter := createEnvoyFilter(envoyConfig, instanceID)
+		envoyFilter := createEnvoyFilter(envoyConfig, envoyConfig.App)
 		// 创建 EnvoyFilter
 		_, err := client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 		if err != nil {
@@ -163,10 +169,32 @@ func GeneralTrafficGenertator() {
 	for i := 0; i < instanceCount-1; i++ {
 
 		nextNodes := getNextNLayers(hostAndPorts, i)
+		serviceURL := "http://" + hostAndPorts[i][0] + "/healthz"
+		for {
+			err := checkService(serviceURL)
+			if err == nil {
+				break
+			}
+
+			if i >= maxRetries {
+				fmt.Errorf("超过最大重试次数%d次", maxRetries)
+			}
+
+			delay := retryDelay * time.Duration(i+1) // 线性退避
+			fmt.Printf("第%d次重试，等待%s后重试\n", i+1, delay)
+			time.Sleep(delay)
+		}
 		setDownstreamNode(nextNodes, hostAndPorts[i][0])
 
 	}
 
+}
+func checkService(serviceURL string) error {
+	resp, err := http.Get(serviceURL)
+	if err != nil || resp.StatusCode != 200 {
+		return fmt.Errorf("服务不可用，状态码: %d", resp.StatusCode)
+	}
+	return nil
 }
 
 // 创建 Deployment
@@ -261,14 +289,14 @@ func createService(instanceID string) *corev1.Service {
 	}
 }
 
-func createEnvoyFilter(config EnvoyFilterConfig, instanceID string) *unstructured.Unstructured {
+func createEnvoyFilter(config EnvoyFilterConfig, instanceName string) *unstructured.Unstructured {
 	// 定义 EnvoyFilter 对象
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "networking.istio.io/v1alpha3",
 			"kind":       "EnvoyFilter",
 			"metadata": map[string]interface{}{
-				"name":      "filter-confusion-header" + instanceID,
+				"name":      "filter-confusion-header" + instanceName,
 				"namespace": config.Namespace,
 			},
 			"spec": map[string]interface{}{
@@ -341,21 +369,15 @@ func setDownstreamNode(nodes []string, service string) {
 	}
 	targetSetNode := "http://" + service + "/set-nodes"
 
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse // 不自动跳转
-		},
-	}
+	client := &http.Client{}
 
 	// 序列化为 JSON
 	requestBody, err := json.Marshal(urls)
 	if err != nil {
 		log.Fatalf("JSON 序列化失败: %v", err)
 	}
-
 	// 创建 HTTP 请求
 	req, err := http.NewRequest("POST", targetSetNode, bytes.NewBuffer(requestBody))
-	req.Close = true // 禁用 Keep-Alive，强制重新 DNS 解析
 	//这里也要将分开
 	req.Header.Set("Host", strings.Split(service, ":")[0])
 	if err != nil {
@@ -376,19 +398,18 @@ func setDownstreamNode(nodes []string, service string) {
 	log.Printf("Dest Service(目标服务): %+v", targetSetNode)
 	// 发送请求
 	resp, err := client.Do(req)
-	resp1, _ := client.Post(targetSetNode, "application/json", bytes.NewBuffer(requestBody))
+
 	if err != nil {
 		log.Fatalf("发送 HTTP 请求失败: %v", err)
 	}
 	defer resp.Body.Close()
-	defer resp1.Body.Close()
+
 	// 读取响应
 	body, err := io.ReadAll(resp.Body)
-	body1, _ := io.ReadAll(resp1.Body)
+
 	if err != nil {
 		log.Fatalf("读取响应失败: %v", err)
 	}
-	fmt.Printf("换了个新方法，不过估计也差不多: %s\n", string(body1))
 
 	// 输出响应
 	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
@@ -415,6 +436,7 @@ func setDownstreamNode(nodes []string, service string) {
 	// 5. 输出响应
 	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
 	fmt.Printf("响应内容: %s\n", string(body))
+
 }
 func getNextNLayers(hostAndPorts [][]string, N int) []string {
 	var result []string
