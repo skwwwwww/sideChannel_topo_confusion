@@ -142,6 +142,7 @@ func findKeyPaths(allPaths []PathInfo) []PathInfo {
 func GetCriticalPaths() (Topo, []string, []PathInfo) {
 	// 1. 获取原始拓扑
 	root := topo.GetTopo()
+	root = ServiceFilter(root)
 	topo := Shaped(root)
 
 	// 2. 计算关键节点和路径
