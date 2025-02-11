@@ -29,7 +29,8 @@ func GetTopo() Root {
 	// 这个包括了service以及workload
 	// test_url1 := "http://192.168.200.153:20001/kiali/api/namespaces/graph?duration=60s&graphType=versionedApp&includeIdleEdges=false&injectServiceNodes=true&boxBy=app&appenders=deadNode,istio,serviceEntry,meshCheck,workloadEntry,health&rateGrpc=requests&rateHttp=requests&rateTcp=total&namespaces=istio-system,local-path-storage,sockshop-coherence,sockshop-core,default"
 	// 这个只包含了service上的路径
-	test_url1 := "http://192.168.200.153:20001/kiali/api/namespaces/graph?duration=60s&graphType=service&includeIdleEdges=false&injectServiceNodes=true&boxBy=cluster,namespace&appenders=deadNode,istio,serviceEntry,meshCheck,workloadEntry,health&rateGrpc=requests&rateHttp=requests&rateTcp=sent&namespaces=default,istio-system,local-path-storage,sockshop-coherence,sockshop-core"
+	//test_url1 := "http://192.168.200.153:20001/kiali/api/namespaces/graph?duration=60s&graphType=service&includeIdleEdges=false&injectServiceNodes=true&boxBy=cluster,namespace&appenders=deadNode,istio,serviceEntry,meshCheck,workloadEntry,health&rateGrpc=requests&rateHttp=requests&rateTcp=sent&namespaces=default,istio-system,local-path-storage,sockshop-coherence,sockshop-core"
+	test_url1 := "http://kiali.istio-system.svc.cluster.local:20001/kiali/api/namespaces/graph?duration=60s&graphType=service&includeIdleEdges=false&injectServiceNodes=true&boxBy=cluster,namespace&appenders=deadNode,istio,serviceEntry,meshCheck,workloadEntry,health&rateGrpc=requests&rateHttp=requests&rateTcp=sent&namespaces=default,istio-system,local-path-storage,sockshop-coherence,sockshop-core"
 	resp, err := http.Get(test_url1)
 	if err != nil {
 		log.Fatalf("Error fetching data: %v", err)

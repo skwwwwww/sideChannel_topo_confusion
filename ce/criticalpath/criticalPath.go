@@ -21,7 +21,7 @@ func calculateDegrees(t Topo) map[string]int {
 }
 
 // 2. 找到图中度最大的节点
-func findKeyNodes(degrees map[string]int) map[string]bool {
+func findKeyNodes(degrees map[string]int) (map[string]bool, int) {
 	maxDegree := 0
 	for _, d := range degrees {
 		if d > maxDegree {
@@ -38,7 +38,7 @@ func findKeyNodes(degrees map[string]int) map[string]bool {
 		}
 	}
 
-	return keyNodes
+	return keyNodes, maxDegree
 }
 
 // 3. 枚举所有边
@@ -139,7 +139,7 @@ func findKeyPaths(allPaths []PathInfo) []PathInfo {
 	return keyPaths
 }
 
-func GetCriticalPaths() (Topo, []string, []PathInfo) {
+func GetCriticalPaths() (Topo, []string, []PathInfo, int) {
 	// 1. 获取原始拓扑
 	root := topo.GetTopo()
 	root = ServiceFilter(root)
@@ -147,7 +147,7 @@ func GetCriticalPaths() (Topo, []string, []PathInfo) {
 
 	// 2. 计算关键节点和路径
 	degrees := calculateDegrees(topo)
-	keyNodes := findKeyNodes(degrees)
+	keyNodes, maxDegree := findKeyNodes(degrees)
 	keyPaths := findKeyPaths(generateAllPaths(topo, degrees, keyNodes))
 	criticalNodes := []string{}
 	for k, v := range keyNodes {
@@ -155,5 +155,5 @@ func GetCriticalPaths() (Topo, []string, []PathInfo) {
 			criticalNodes = append(criticalNodes, k)
 		}
 	}
-	return topo, criticalNodes, keyPaths
+	return topo, criticalNodes, keyPaths, maxDegree
 }
