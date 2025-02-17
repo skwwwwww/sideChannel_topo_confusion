@@ -30,7 +30,7 @@ func GeneralTrafficGenertator() {
 	topo, _, keyPaths, maxDegree := criticalpath.GetCriticalPaths()
 	hostAndPorts := [][]string{}
 	// 加载 kubeconfig 文件（默认路径为 ~/.kube/config）
-	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+	config, err := clientcmd.BuildConfigFromFlags("", "./config")
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %v", err)
 	}
@@ -105,7 +105,9 @@ func GeneralTrafficGenertator() {
 			log.Fatal("Service 没有定义任何端口")
 		}
 		port := createService.Spec.Ports[0].Port
-		dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", createService.Name, createService.Namespace)
+		//dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", createService.Name, createService.Namespace)
+		//dnsName := fmt.Sprintf("%s.%s.svc", createService.Name, createService.Namespace)
+		dnsName := createService.Spec.ClusterIP
 		hostAndPort := []string{}
 		hostAndPort = append(hostAndPort, ""+dnsName+":"+fmt.Sprint(port))
 		hostAndPorts = append(hostAndPorts, hostAndPort)
@@ -145,7 +147,7 @@ func GeneralTrafficGenertator() {
 		}
 		port := service.Spec.Ports[0].Port
 		len := len(hostAndPorts)
-		hostAndPorts[len-1] = append(hostAndPorts[len-1], ""+dnsName+":"+string(port))
+		hostAndPorts[len-1] = append(hostAndPorts[len-1], ""+dnsName+":"+fmt.Sprintf("%d", port))
 
 	}
 
@@ -316,6 +318,14 @@ func setDownstreamNode(nodes []string, service string) {
 	// 设置请求头
 	req.Header.Set("Content-Type", "application/json")
 
+	// 记录请求头
+	log.Printf("请求头: %+v", req.Header)
+
+	// 记录请求体
+	log.Printf("请求体: %+v", urls)
+
+	//记录service
+	log.Printf("Dest Service(目标服务): %+v", "http://"+service+"/set-nodes")
 	// 发送请求
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -360,7 +370,7 @@ func getNextNLayers(hostAndPorts [][]string, N int) []string {
 	var result []string
 
 	len := len(hostAndPorts)
-	for j := 1; j < len-2 && j+N < len; j++ {
+	for j := 1; j <= len-2 && j+N < len; j++ {
 		result = append(result, hostAndPorts[N+j]...)
 	}
 

@@ -97,5 +97,6 @@ func main() {
 	// fmt.Println(keyPaths)
 	//len := len(keyPaths)
 	generaltg.GeneralTrafficGenertator()
+	select {}
 
 }
