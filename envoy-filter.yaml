@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-confusion-header
+  namespace: default  # 替换为你的命名空间
+spec:
+  workloadSelector:
+    labels:
+      app: ratings  # 替换为你的 Pod 的标签
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+            subFilter:
+              name: "envoy.filters.http.router"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.lua
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          inlineCode: |
+            function envoy_on_request(request_handle)
+              local headers = request_handle:headers()
+              if headers:get("X-Traffic-Type") == "confusion" then
+                request_handle:respond({[":status"] = "200"}, "Request header not allowed")
+              end
+            end
+

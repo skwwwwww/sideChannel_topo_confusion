@@ -27,31 +27,35 @@ type EnvoyFilterConfig struct {
 }
 
 func GeneralTrafficGenertator() {
+	// 从上一个包获取关键路径
 	topo, _, keyPaths, maxDegree := criticalpath.GetCriticalPaths()
 	hostAndPorts := [][]string{}
+
 	// 加载 kubeconfig 文件（默认路径为 ~/.kube/config）
 	config, err := clientcmd.BuildConfigFromFlags("", "./config")
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %v", err)
 	}
-	// 3. 创建 DynamicClient
+
+	// 创建 DynamicClient
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		log.Fatalf("无法创建 DynamicClient: %v", err)
 	}
+
 	// 创建 Kubernetes 客户端
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatalf("Failed to create Kubernetes client: %v", err)
 	}
 	instanceCount := 0
+
 	// 定义要创建的实例个数,关键节点的度或者关键路径的长度
 	maxLen := 0
 	for _, v := range keyPaths {
 		maxLen = max(len(v.Nodes), maxLen)
 	}
 	instanceCount = max(maxLen, maxDegree)
-
 	namespace := topo.Nodes[keyPaths[0].Nodes[0]].Data.Namespace
 
 	// 定义 EnvoyFilter 的 GVR (Group Version Resource)
@@ -62,7 +66,8 @@ func GeneralTrafficGenertator() {
 	}
 	// 为每个实例创建 Deployment 和 Service
 	for i := 1; i <= instanceCount; i++ {
-		instanceID := string(rune('a' - 1 + i)) // 生成唯一的实例 ID，例如 a, b, c
+
+		instanceID := fmt.Sprintf("%d", i) // 生成唯一的实例 ID，例如 a, b, c
 
 		// 创建 Deployment
 		deployment := createDeployment(instanceID)
@@ -85,7 +90,7 @@ func GeneralTrafficGenertator() {
 		envoyConfig := EnvoyFilterConfig{}
 		envoyConfig.App = "traffic-generator-" + instanceID
 		envoyConfig.Namespace = namespace
-		envoyFilter := createEnvoyFilter(envoyConfig)
+		envoyFilter := createEnvoyFilter(envoyConfig, instanceID)
 		// 创建 EnvoyFilter
 		_, err = client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 		if err != nil {
@@ -113,7 +118,8 @@ func GeneralTrafficGenertator() {
 		hostAndPorts = append(hostAndPorts, hostAndPort)
 	}
 
-	for _, v := range keyPaths {
+	for i, v := range keyPaths {
+		instanceID := fmt.Sprintf("S%d", i)
 		keyPathLen := len(v.Nodes)
 		node := v.Nodes[keyPathLen-1]
 		namespace := topo.Nodes[node].Data.Namespace
@@ -121,7 +127,8 @@ func GeneralTrafficGenertator() {
 		envoyConfig := EnvoyFilterConfig{}
 		envoyConfig.Namespace = namespace
 		envoyConfig.App = app
-		envoyFilter := createEnvoyFilter(envoyConfig)
+
+		envoyFilter := createEnvoyFilter(envoyConfig, instanceID)
 		// 创建 EnvoyFilter
 		_, err := client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 		if err != nil {
@@ -227,14 +234,14 @@ func createService(instanceID string) *corev1.Service {
 	}
 }
 
-func createEnvoyFilter(config EnvoyFilterConfig) *unstructured.Unstructured {
+func createEnvoyFilter(config EnvoyFilterConfig, instanceID string) *unstructured.Unstructured {
 	// 定义 EnvoyFilter 对象
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "networking.istio.io/v1alpha3",
 			"kind":       "EnvoyFilter",
 			"metadata": map[string]interface{}{
-				"name":      "filter-confusion-header",
+				"name":      "filter-confusion-header" + instanceID,
 				"namespace": config.Namespace,
 			},
 			"spec": map[string]interface{}{
@@ -322,6 +329,7 @@ func setDownstreamNode(nodes []string, service string) {
 	log.Printf("请求头: %+v", req.Header)
 
 	// 记录请求体
+	log.Printf("Request Body (Raw JSON): %s", string(requestBody))
 	log.Printf("请求体: %+v", urls)
 
 	//记录service
