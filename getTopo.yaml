@@ -7,3 +7,20 @@ spec:
   - name: gettopo
     image: get-topo
     imagePullPolicy: IfNotPresent
+    
+    livenessProbe:
+      httpGet:
+        path: /healthz  # 替换为您的健康检查端点
+        port: 8080
+      initialDelaySeconds: 30  # 初始延迟时间
+      periodSeconds: 10        # 检查频率
+      timeoutSeconds: 5        # 超时时间
+      failureThreshold: 3      # 失败阈值
+    readinessProbe:
+      httpGet:
+        path: /ready  # 替换为您的就绪检查端点
+        port: 8080
+      initialDelaySeconds: 5   # 初始延迟时间
+      periodSeconds: 10        # 检查频率
+      timeoutSeconds: 5        # 超时时间
+      failureThreshold: 3      # 失败阈值

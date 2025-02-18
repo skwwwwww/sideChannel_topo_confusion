@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 
 	criticalpath "github.com/sideChannel_topo_confusion/ce/criticalpath"
 	appsv1 "k8s.io/api/apps/v1"
@@ -56,6 +57,7 @@ func GeneralTrafficGenertator() {
 		maxLen = max(len(v.Nodes), maxLen)
 	}
 	instanceCount = max(maxLen, maxDegree)
+	// 确定namespace
 	namespace := topo.Nodes[keyPaths[0].Nodes[0]].Data.Namespace
 
 	// 定义 EnvoyFilter 的 GVR (Group Version Resource)
@@ -76,7 +78,7 @@ func GeneralTrafficGenertator() {
 			log.Printf("Failed to create deployment %s: %v", instanceID, err)
 			continue
 		}
-		fmt.Printf("Deployment created successfully: traffic-generator-%s\n", instanceID)
+		fmt.Printf("Deployment created successfully: traffic-service-%s\n", instanceID)
 
 		// 创建 Service
 		service := createService(instanceID)
@@ -88,7 +90,7 @@ func GeneralTrafficGenertator() {
 		fmt.Printf("Service created successfully: traffic-service-%s\n", instanceID)
 
 		envoyConfig := EnvoyFilterConfig{}
-		envoyConfig.App = "traffic-generator-" + instanceID
+		envoyConfig.App = "traffic-service-" + instanceID
 		envoyConfig.Namespace = namespace
 		envoyFilter := createEnvoyFilter(envoyConfig, instanceID)
 		// 创建 EnvoyFilter
@@ -97,7 +99,7 @@ func GeneralTrafficGenertator() {
 			fmt.Errorf("无法创建 EnvoyFilter: %v", err)
 		}
 
-		fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, "filter-confusion-header")
+		fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
 
 		// 提取 ClusterIP (host) 和 Port
 		host := createService.Spec.ClusterIP
@@ -110,9 +112,9 @@ func GeneralTrafficGenertator() {
 			log.Fatal("Service 没有定义任何端口")
 		}
 		port := createService.Spec.Ports[0].Port
-		//dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", createService.Name, createService.Namespace)
+		dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", createService.Name, createService.Namespace)
 		//dnsName := fmt.Sprintf("%s.%s.svc", createService.Name, createService.Namespace)
-		dnsName := createService.Spec.ClusterIP
+		//dnsName := createService.Spec.ClusterIP
 		hostAndPort := []string{}
 		hostAndPort = append(hostAndPort, ""+dnsName+":"+fmt.Sprint(port))
 		hostAndPorts = append(hostAndPorts, hostAndPort)
@@ -135,7 +137,7 @@ func GeneralTrafficGenertator() {
 			fmt.Errorf("无法创建 EnvoyFilter: %v", err)
 		}
 
-		fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, "filter-confusion-header")
+		fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
 		service, err := clientset.CoreV1().Services(namespace).Get(context.TODO(), app, metav1.GetOptions{})
 		if err != nil {
 			log.Fatalf("无法获取 Service: %v", err)
@@ -171,19 +173,19 @@ func GeneralTrafficGenertator() {
 func createDeployment(instanceID string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "traffic-generator-" + instanceID,
+			Name: "traffic-service-" + instanceID,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": "traffic-generator-" + instanceID,
+					"app": "traffic-service-" + instanceID,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": "traffic-generator-" + instanceID,
+						"app": "traffic-service-" + instanceID,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -202,6 +204,31 @@ func createDeployment(instanceID string) *appsv1.Deployment {
 									ContainerPort: 8080,
 								},
 							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/healthz",
+										Port: intstr.FromInt(8080),
+									},
+								},
+								InitialDelaySeconds: 30,
+								PeriodSeconds:       10,
+								TimeoutSeconds:      5,
+								FailureThreshold:    3,
+							},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/ready",
+										Port: intstr.FromInt(8080),
+									},
+								},
+								InitialDelaySeconds: 5,
+								PeriodSeconds:       10,
+								TimeoutSeconds:      1,
+								SuccessThreshold:    1,
+								FailureThreshold:    3,
+							},
 						},
 					},
 				},
@@ -218,7 +245,7 @@ func createService(instanceID string) *corev1.Service {
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"app": "traffic-generator-" + instanceID,
+				"app": "traffic-service-" + instanceID,
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -312,41 +339,56 @@ func setDownstreamNode(nodes []string, service string) {
 	for _, v := range nodes {
 		urls = append(urls, v+"/api")
 	}
+	targetSetNode := "http://" + service + "/set-nodes"
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // 不自动跳转
+		},
+	}
+
 	// 序列化为 JSON
 	requestBody, err := json.Marshal(urls)
 	if err != nil {
 		log.Fatalf("JSON 序列化失败: %v", err)
 	}
+
 	// 创建 HTTP 请求
-	req, err := http.NewRequest("POST", "http://"+service+"/set-nodes", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", targetSetNode, bytes.NewBuffer(requestBody))
+	req.Close = true // 禁用 Keep-Alive，强制重新 DNS 解析
+	//这里也要将分开
+	req.Header.Set("Host", strings.Split(service, ":")[0])
 	if err != nil {
 		log.Fatalf("无法创建 HTTP 请求: %v", err)
 	}
+
 	// 设置请求头
 	req.Header.Set("Content-Type", "application/json")
 
 	// 记录请求头
 	log.Printf("请求头: %+v", req.Header)
+	log.Printf("Url: %+v", req.URL)
 
 	// 记录请求体
-	log.Printf("Request Body (Raw JSON): %s", string(requestBody))
-	log.Printf("请求体: %+v", urls)
+	log.Printf("请求体(Raw JSON): %s", string(requestBody))
 
 	//记录service
-	log.Printf("Dest Service(目标服务): %+v", "http://"+service+"/set-nodes")
+	log.Printf("Dest Service(目标服务): %+v", targetSetNode)
 	// 发送请求
-	client := &http.Client{}
 	resp, err := client.Do(req)
+	resp1, _ := client.Post(targetSetNode, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		log.Fatalf("发送 HTTP 请求失败: %v", err)
 	}
 	defer resp.Body.Close()
-
+	defer resp1.Body.Close()
 	// 读取响应
 	body, err := io.ReadAll(resp.Body)
+	body1, _ := io.ReadAll(resp1.Body)
 	if err != nil {
 		log.Fatalf("读取响应失败: %v", err)
 	}
+	fmt.Printf("换了个新方法，不过估计也差不多: %s\n", string(body1))
 
 	// 输出响应
 	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
@@ -357,22 +399,22 @@ func setDownstreamNode(nodes []string, service string) {
 	if err1 != nil {
 		log.Fatalf("无法创建 HTTP 请求: %v", err)
 	}
-	client1 := &http.Client{}
-	resp1, err := client1.Do(req1)
+	//client1 := &http.Client{}
+	resp, err = client.Do(req1)
 	if err != nil {
 		log.Fatalf("发送 HTTP 请求失败: %v", err)
 	}
-	defer resp1.Body.Close()
+	defer resp.Body.Close()
 
 	// 4. 读取响应
-	body1, err := io.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("读取响应失败: %v", err)
 	}
 
 	// 5. 输出响应
-	fmt.Printf("响应状态码: %d\n", resp1.StatusCode)
-	fmt.Printf("响应内容: %s\n", string(body1))
+	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
+	fmt.Printf("响应内容: %s\n", string(body))
 }
 func getNextNLayers(hostAndPorts [][]string, N int) []string {
 	var result []string
