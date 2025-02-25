@@ -10,6 +10,7 @@ import (
 )
 
 var downstreamNodes []string
+var stopChan = make(chan struct{})
 
 func main() {
 	// 从环境变量读取初始节点
@@ -21,6 +22,7 @@ func main() {
 
 	http.HandleFunc("/set-nodes", setNodesHandler)
 	http.HandleFunc("/start-traffic", startTrafficHandler)
+	http.HandleFunc("/stop-traffic", stopTrafficHandler)
 	http.HandleFunc("/healthz", healthz)
 	http.HandleFunc("/ready", ready)
 
@@ -49,43 +51,94 @@ func setNodesHandler(w http.ResponseWriter, r *http.Request) {
 	downstreamNodes = nodes
 	fmt.Fprintf(w, "Downstream nodes set: %v\n", downstreamNodes)
 }
+
 func startTrafficHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	go sendTraffic()
+	go sendTraffic(stopChan)
 	fmt.Fprintf(w, "Traffic generation started\n")
 }
 
-func sendTraffic() {
+func stopTrafficHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	close(stopChan)
+	fmt.Fprintf(w, "Traffic generation stoped\n")
+}
+
+// func sendTraffic() {
+// 	for {
+// 		for _, node := range downstreamNodes {
+// 			url := fmt.Sprintf("http://%s", node)
+// 			fmt.Printf("Url %s\n", url)
+// 			req, err := http.NewRequest("GET", url, nil)
+// 			if err != nil {
+// 				fmt.Printf("Error creating request to %s: %v\n", node, err)
+// 				continue
+// 			}
+
+// 			// 添加固定的请求头
+// 			req.Header.Add("X-Traffic-Type", "confusion")
+
+// 			client := &http.Client{}
+// 			resp, err := client.Do(req)
+// 			if err != nil {
+// 				fmt.Printf("Error sending request to %s: %v\n", node, err)
+// 				continue
+// 			}
+
+// 			fmt.Printf("Response from %s: %s\n", node, resp.Status)
+// 			resp.Body.Close()
+// 		}
+
+// 		// 每隔5秒发送一次流量
+// 		time.Sleep(5 * time.Second)
+// 	}
+// }
+
+func sendTraffic(stop <-chan struct{}) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	for {
-		for _, node := range downstreamNodes {
-			url := fmt.Sprintf("http://%s", node)
-			fmt.Printf("Url %s\n", url)
-			req, err := http.NewRequest("GET", url, nil)
-			if err != nil {
-				fmt.Printf("Error creating request to %s: %v\n", node, err)
-				continue
+		select {
+		case <-stop:
+			fmt.Println("Traffic sending stopped")
+			return
+		case <-ticker.C:
+			for _, node := range downstreamNodes {
+				url := fmt.Sprintf("http://%s", node)
+				fmt.Printf("Url %s\n", url)
+
+				req, err := http.NewRequest("GET", url, nil)
+				if err != nil {
+					fmt.Printf("Error creating request to %s: %v\n", node, err)
+					continue
+				}
+
+				req.Header.Add("X-Traffic-Type", "confusion")
+
+				// 添加请求超时控制
+				client := &http.Client{
+					Timeout: 10 * time.Second,
+				}
+
+				resp, err := client.Do(req)
+				if err != nil {
+					fmt.Printf("Error sending request to %s: %v\n", node, err)
+					continue
+				}
+
+				fmt.Printf("Response from %s: %s\n", node, resp.Status)
+				resp.Body.Close()
 			}
-
-			// 添加固定的请求头
-			req.Header.Add("X-Traffic-Type", "confusion")
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				fmt.Printf("Error sending request to %s: %v\n", node, err)
-				continue
-			}
-
-			fmt.Printf("Response from %s: %s\n", node, resp.Status)
-			resp.Body.Close()
 		}
-
-		// 每隔5秒发送一次流量
-		time.Sleep(5 * time.Second)
 	}
 }
 
