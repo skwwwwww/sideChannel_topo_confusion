@@ -6,6 +6,7 @@ import (
 	topo "github.com/sideChannel_topo_confusion/ce/topo"
 )
 
+// 将用于混淆的servcie以及过滤掉
 func ServiceFilter(t topo.Root) topo.Root {
 	nodeMap := map[string]bool{}
 	toRemoveNode := []int{}

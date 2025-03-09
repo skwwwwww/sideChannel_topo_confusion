@@ -6,15 +6,12 @@ import (
 	// "fmt"
 
 	// "html/template"
-	// criticalpath "github.com/sideChannel_topo_confusion/ce/criticalpath"
 	"encoding/json"
 	"fmt"
+	//"fmt"
 	"net/http"
 
 	generaltg "github.com/sideChannel_topo_confusion/ce/generalTG"
-	// obfuscation "github.com/sideChannel_topo_confusion/ce/obfuscationstrategy"
-	// "k8s.io/client-go/kubernetes"
-	// "k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
@@ -100,6 +97,7 @@ func main() {
 	// _, _, keyPaths := criticalpath.GetCriticalPaths()
 	// fmt.Println(keyPaths)
 	//len := len(keyPaths)
+
 	generaltg.GeneralTrafficGenertator()
 
 	http.HandleFunc("/healthz", healthz)
@@ -109,6 +107,8 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 	for {
 	}
+
+	//criticalpath.GetTrafficMertics("default", "ratings", criticalpath.TRAFFIC)
 }
 
 // HealthStatus represents the health status of the application.
