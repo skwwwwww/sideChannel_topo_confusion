@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-var downstreamNodes []string
-var stopChan = make(chan struct{})
-
+var downstreamNodes []NodeInfo
+var stopChanList = []chan struct{}{}
 func main() {
 	// 从环境变量读取初始节点
+	// 这个等大后期再研究
 	if envNodes := os.Getenv("INITIAL_NODES"); envNodes != "" {
 		if err := json.Unmarshal([]byte(envNodes), &downstreamNodes); err != nil {
 			fmt.Printf("Error parsing INITIAL_NODES: %v\n", err)
@@ -42,7 +42,7 @@ func setNodesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var nodes []string
+	var nodes []NodeInfo
 	if err := json.Unmarshal(body, &nodes); err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return
@@ -58,7 +58,12 @@ func startTrafficHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go sendTraffic(stopChan)
+	for _, downstreamNode := range downstreamNodes {
+
+		stopChan := make(chan struct{})
+		stopChanList = append(stopChanList,stopChan)
+		go TrafficControl(downstreamNode,stopChan)
+	}
 	fmt.Fprintf(w, "Traffic generation started\n")
 }
 
@@ -68,78 +73,60 @@ func stopTrafficHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	close(stopChan)
+	for _, stopChan := range stopChanList {	
+		close(stopChan)
+	}
 	fmt.Fprintf(w, "Traffic generation stoped\n")
 }
 
-// func sendTraffic() {
-// 	for {
-// 		for _, node := range downstreamNodes {
-// 			url := fmt.Sprintf("http://%s", node)
-// 			fmt.Printf("Url %s\n", url)
-// 			req, err := http.NewRequest("GET", url, nil)
-// 			if err != nil {
-// 				fmt.Printf("Error creating request to %s: %v\n", node, err)
-// 				continue
-// 			}
-
-// 			// 添加固定的请求头
-// 			req.Header.Add("X-Traffic-Type", "confusion")
-
-// 			client := &http.Client{}
-// 			resp, err := client.Do(req)
-// 			if err != nil {
-// 				fmt.Printf("Error sending request to %s: %v\n", node, err)
-// 				continue
-// 			}
-
-// 			fmt.Printf("Response from %s: %s\n", node, resp.Status)
-// 			resp.Body.Close()
-// 		}
-
-// 		// 每隔5秒发送一次流量
-// 		time.Sleep(5 * time.Second)
-// 	}
-// }
-
-func sendTraffic(stop <-chan struct{}) {
-	ticker := time.NewTicker(5 * time.Second)
+// 这里是发送流量的具体逻辑
+func TrafficControl(node NodeInfo, stop <-chan struct{}) {
+	ticker := time.NewTicker(time.Second * time.Duration(node.nodeRPS))
 	defer ticker.Stop()
-
+	// 添加请求超时控制
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 	for {
-		select {
-		case <-stop:
-			fmt.Println("Traffic sending stopped")
-			return
-		case <-ticker.C:
-			for _, node := range downstreamNodes {
-				url := fmt.Sprintf("http://%s", node)
-				fmt.Printf("Url %s\n", url)
-
-				req, err := http.NewRequest("GET", url, nil)
-				if err != nil {
-					fmt.Printf("Error creating request to %s: %v\n", node, err)
-					continue
+		for i := 1; i <= 100; i++{
+			select {
+			case <-stop:
+				fmt.Println("Traffic sending stopped")
+				return
+			case <-ticker.C:
+				if i <= node.nodeErrorRate {
+					sendTraffic(client,true,node.nodeName)	
+				} else {
+					sendTraffic(client,false,node.nodeName)
 				}
-
-				req.Header.Add("X-Traffic-Type", "confusion")
-
-				// 添加请求超时控制
-				client := &http.Client{
-					Timeout: 10 * time.Second,
-				}
-
-				resp, err := client.Do(req)
-				if err != nil {
-					fmt.Printf("Error sending request to %s: %v\n", node, err)
-					continue
-				}
-
-				fmt.Printf("Response from %s: %s\n", node, resp.Status)
-				resp.Body.Close()
 			}
 		}
+		
 	}
+}
+
+func sendTraffic(client *http.Client,isConfusion bool,nodeName string) (error){
+	url := fmt.Sprintf("http://%s", nodeName)
+	fmt.Printf("Url %s\n", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Printf("Error creating request to %s: %v\n", nodeName, err)
+		return err
+	}
+	// 添加固定的请求头	
+	if isConfusion {
+		req.Header.Add("X-Traffic-Type", "confusion")
+	} else {
+		req.Header.Add("X-Traffic-Type", "normal")
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error sending request to %s: %v\n", nodeName, err)
+		return err
+	}
+	fmt.Printf("Response from %s: %s\n", nodeName, resp.Status)
+	resp.Body.Close()
+	return nil
 }
 
 // HealthStatus represents the health status of the application.

@@ -56,8 +56,12 @@ func Shaped(root topo.Root) Topo {
 }
 
 // 将从kiali获取到的topo重塑成加权有向连接矩阵
-func shaped1(root topo.Root) (trafficMap [][]TrafficEdge, nodes []string, nodesMap map[string]TrafficNode) {
+// 还得把根节点过滤出来
+func shaped1(root topo.Root) (trafficMap [][]TrafficEdge, nodes []string, nodesMap map[string]TrafficNode, rootNodes []TrafficNode) {
+	rootNodes = []TrafficNode{}
+
 	num := 0
+	nodesMap = make(map[string]TrafficNode)
 	//获取节点的namespace，serviceName, 以及在图中的顺序
 	for i, v := range root.Elements.Nodes {
 		nodes = append(nodes, v.Data.ID)
@@ -68,6 +72,9 @@ func shaped1(root topo.Root) (trafficMap [][]TrafficEdge, nodes []string, nodesM
 		}
 		nodesMap[nodes[i]] = trafficNode
 		num++
+		if v.Data.IsRoot {
+			rootNodes = append(rootNodes, trafficNode)
+		}
 	}
 
 	trafficMap = make([][]TrafficEdge, num)
@@ -94,32 +101,9 @@ func shaped1(root topo.Root) (trafficMap [][]TrafficEdge, nodes []string, nodesM
 
 	}
 
-	return [][]TrafficEdge{}, []string{}, nodesMap
+	return trafficMap, nodes, nodesMap, rootNodes
 }
 
-// 根据不同的应用类型返回不同的权值
-// 服务依赖性 -> 边的权值为 "1"
-// 延迟敏感型 -> 边的权值为服务间的平均延迟
-// 流量密集型 -> 边的权值为服务间的流量大小（这个不知道kiali中能不能获取到）
-// 可靠优先型 -> 边的权值为错误率
-// 资源密集型 -> 待定
-func GetValue(applicationType int, namespace string, service string) float64 {
-
-	if applicationType == SERVICE_DEPENDENCY {
-		return 1.0
-	}
-	if applicationType == DELAY_SENSITIVE {
-
-	}
-	//先暂定使用rps
-	if applicationType == TRAFFIC_INTENSIVE {
-
-	}
-	if applicationType == RELIABILITY_PRIORITY {
-
-	}
-	return 1.0
-}
 
 // metricTpye 目前有两种TRAFFIC和METRICS
 func GetTrafficMertics(namespace, service, metricTpye string) {
@@ -154,38 +138,4 @@ func GetTrafficMertics(namespace, service, metricTpye string) {
 		fmt.Println("第一条边的协议:", topology.Elements.Edges[0].Data.Traffic.Protocol)
 	}
 
-}
-
-// 深度优先搜索算法找到权值和最大的路径
-func FindMaxWeightPath(trafficMap [][]TrafficEdge, nodes []string, nodesMap map[string]TrafficNode, applicationType int) (maxWeight float64, maxPath []string) {
-	visited := make([]bool, len(nodes))
-	var currentPath []string
-	var dfs func(node int, currentWeight float64)
-
-	dfs = func(node int, currentWeight float64) {
-		visited[node] = true
-		currentPath = append(currentPath, nodes[node])
-
-		isLeaf := true
-		for i, edge := range trafficMap[node] {
-			if edge.isConnected && !visited[i] {
-				isLeaf = false
-				dfs(i, currentWeight+GetEdgeValue(edge, applicationType))
-			}
-		}
-
-		if isLeaf && currentWeight > maxWeight {
-			maxWeight = currentWeight
-			maxPath = append([]string(nil), currentPath...)
-		}
-
-		currentPath = currentPath[:len(currentPath)-1]
-		visited[node] = false
-	}
-
-	for i := range nodes {
-		dfs(i, 0)
-	}
-
-	return maxWeight, maxPath
 }
