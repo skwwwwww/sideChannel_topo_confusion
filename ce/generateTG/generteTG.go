@@ -42,6 +42,7 @@ var gvr = schema.GroupVersionResource{
 // 这里搞一个全局的client，用来创建相关的资源
 var client dynamic.Interface
 var clientset *kubernetes.Clientset
+
 // client初始化
 func initClient() {
 	config, err := clientcmd.BuildConfigFromFlags("", "./config")
@@ -54,7 +55,7 @@ func initClient() {
 	if err != nil {
 		log.Fatalf("无法创建 DynamicClient: %v", err)
 	}
-	
+
 	// 创建 Kubernetes 客户端
 	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
@@ -66,39 +67,65 @@ func initClient() {
 // 返回值
 func CreateOA(namespace string, instanceID string) *corev1.Service {
 	// 创建 Deployment
-	deployment := createDeployment(instanceID)
+	deployment := configDeployment(instanceID)
 	_, err := clientset.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("Failed to create deployment %s: %v", instanceID, err)
 	}
 	fmt.Printf("Deployment created successfully: traffic-service-%s\n", instanceID)
 
-		// 创建 Service
-		service := createService(instanceID)
-		createService, err := clientset.CoreV1().Services("default").Create(context.TODO(), service, metav1.CreateOptions{})
-		if err != nil {
-			log.Printf("Failed to create service %s: %v", instanceID, err)
-			continue
-		}
-		fmt.Printf("Service created successfully: traffic-service-%s\n", instanceID)
+	// 创建 Service
+	service := configService(instanceID)
+	createService, err := clientset.CoreV1().Services("default").Create(context.TODO(), service, metav1.CreateOptions{})
+	if err != nil {
+		log.Printf("Failed to create service %s: %v", instanceID, err)
+	}
+	fmt.Printf("Service created successfully: traffic-service-%s\n", instanceID)
+	return createService
+}
 
-		envoyConfig := EnvoyFilterConfig{}
-		envoyConfig.App = "traffic-service-" + instanceID
-		envoyConfig.Namespace = namespace
-		envoyFilter := createEnvoyFilter(envoyConfig, envoyConfig.App)
-		// 创建 EnvoyFilter
-		_, err = client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
-		if err != nil {
-			fmt.Errorf("无法创建 EnvoyFilter: %v", err)
-		}
+// 这里创建EnvoyFilter
+func CreateEnvoyFilter(namespace string, instanceName string) {
+	envoyConfig := EnvoyFilterConfig{}
+	// envoyConfig.App = "traffic-service-" + instanceID
+	envoyConfig.App = instanceName
+	envoyConfig.Namespace = namespace
+	envoyFilter := configEnvoyFilter(envoyConfig, envoyConfig.App)
+	// 创建 EnvoyFilter
+	_, err := client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Errorf("无法创建 EnvoyFilter: %v", err)
+	}
 
-		fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
+	fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
 
-		// 提取 ClusterIP (host) 和 Port
-		host := createService.Spec.ClusterIP
-		if host == "" {
-			log.Fatal("Service 没有 ClusterIP(可能是 Headless Service)")
-		}
+}
+
+// 这里我觉的还需要解耦以下，他的责任只是创建OA
+func GeneralTrafficGenertator() {
+	// 从上一个包获取关键路径
+	topo, _, keyPaths, maxDegree := criticalpath.GetCriticalPaths()
+	hostAndPorts := [][]string{}
+	initClient()
+
+	instanceCount := 0
+
+	// 定义要创建的实例个数,关键节点的度或者关键路径的长度
+	maxLen := 0
+	for _, v := range keyPaths {
+		maxLen = max(len(v.Nodes), maxLen)
+	}
+	instanceCount = max(maxLen, maxDegree)
+	// 确定namespace
+	namespace := topo.Nodes[keyPaths[0].Nodes[0]].Data.Namespace
+
+	// 为每个实例创建 Deployment 和 Service
+	for i := 1; i <= instanceCount; i++ {
+
+		instanceID := fmt.Sprintf("%d", i) // 生成唯一的实例 ID，例如 a, b, c
+
+		createService := CreateOA(namespace, instanceID)
+		CreateEnvoyFilter(namespace, "traffic-service-"+instanceID)
 
 		// 获取第一个端口（如果有多个端口，可以根据需要选择）
 		if len(createService.Spec.Ports) == 0 {
@@ -119,29 +146,15 @@ func CreateOA(namespace string, instanceID string) *corev1.Service {
 		node := v.Nodes[keyPathLen-1]
 		namespace := topo.Nodes[node].Data.Namespace
 		app := topo.Nodes[node].Data.App
-		envoyConfig := EnvoyFilterConfig{}
-		envoyConfig.Namespace = namespace
-		envoyConfig.App = app
+		CreateEnvoyFilter(namespace, app)
 
-		envoyFilter := createEnvoyFilter(envoyConfig, envoyConfig.App)
-		// 创建 EnvoyFilter
-		_, err := client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
-		if err != nil {
-			fmt.Errorf("无法创建 EnvoyFilter: %v", err)
-		}
-
-		fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
 		service, err := clientset.CoreV1().Services(namespace).Get(context.TODO(), app, metav1.GetOptions{})
 		if err != nil {
 			log.Fatalf("无法获取 Service: %v", err)
 		}
 
 		// 6. 提取 ClusterIP (host) 和 Port
-		host := service.Spec.ClusterIP
 		dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, service.Namespace)
-		if host == "" {
-			log.Fatal("Service 没有 ClusterIP（可能是 Headless Service）")
-		}
 
 		// 获取第一个端口（如果有多个端口，可以根据需要选择）
 		if len(service.Spec.Ports) == 0 {
@@ -171,7 +184,7 @@ func CreateOA(namespace string, instanceID string) *corev1.Service {
 			fmt.Printf("第%d次重试，等待%s后重试\n", i+1, delay)
 			time.Sleep(delay)
 		}
-		setDownstreamNode(nextNodes, hostAndPorts[i][0])
+		SetDownstreamNode(nextNodes, hostAndPorts[i][0])
 
 	}
 
@@ -184,8 +197,8 @@ func checkService(serviceURL string) error {
 	return nil
 }
 
-// 创建 Deployment
-func createDeployment(instanceID string) *appsv1.Deployment {
+// 配置 Deployment
+func configDeployment(instanceID string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "traffic-service-" + instanceID,
@@ -252,8 +265,8 @@ func createDeployment(instanceID string) *appsv1.Deployment {
 	}
 }
 
-// 创建 Service
-func createService(instanceID string) *corev1.Service {
+// 配置 Service
+func configService(instanceID string) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "traffic-service-" + instanceID,
@@ -276,7 +289,9 @@ func createService(instanceID string) *corev1.Service {
 	}
 }
 
-func createEnvoyFilter(config EnvoyFilterConfig, instanceName string) *unstructured.Unstructured {
+// 配置 EnvoyFilter
+// 这里的配置是为了让EnvoyFilter可以拦截流量
+func configEnvoyFilter(config EnvoyFilterConfig, instanceName string) *unstructured.Unstructured {
 	// 定义 EnvoyFilter 对象
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -332,13 +347,6 @@ end`,
 }
 
 func deleteEnvoyFilter(client dynamic.Interface, config EnvoyFilterConfig) error {
-	// 定义 EnvoyFilter 的 GVR (Group Version Resource)
-	gvr := schema.GroupVersionResource{
-		Group:    "networking.istio.io",
-		Version:  "v1alpha3",
-		Resource: "envoyfilters",
-	}
-
 	// 删除 EnvoyFilter
 	err := client.Resource(gvr).Namespace(config.Namespace).Delete(context.TODO(), "filter-confusion-header", metav1.DeleteOptions{})
 	if err != nil {
@@ -349,7 +357,18 @@ func deleteEnvoyFilter(client dynamic.Interface, config EnvoyFilterConfig) error
 	return nil
 }
 
-func setDownstreamNode(nodes []string, service string) {
+func deleteService(clientset *kubernetes.Clientset, namespace string, instanceID string) error {
+	// 删除 Service
+	err := clientset.CoreV1().Services(namespace).Delete(context.TODO(), "traffic-service-"+instanceID, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("无法删除 Service: %v", err)
+	}
+
+	fmt.Printf("成功删除 Service: %s/%s\n", namespace, "traffic-service-"+instanceID)
+	return nil
+}
+
+func etDownstreamNode(nodes []string, service string) {
 	urls := []string{}
 	for _, v := range nodes {
 		urls = append(urls, v+"/api")
