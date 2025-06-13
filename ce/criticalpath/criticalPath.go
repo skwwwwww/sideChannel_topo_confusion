@@ -1,6 +1,9 @@
 package criticalpath
 
 import (
+	"encoding/json"
+	"fmt"
+
 	topo "github.com/sideChannel_topo_confusion/ce/topo"
 )
 
@@ -139,22 +142,26 @@ func findKeyPaths(allPaths []PathInfo) []PathInfo {
 	return keyPaths
 }
 
-func GetCriticalPaths() (Topo, []string, []PathInfo, int) {
+func GetCriticalPaths() (float64, []string, map[string]TrafficNode, []CriticalPathNodeMetric) {
 	// 1. 获取原始拓扑
-	root := topo.GetTopo()
-	root = ServiceFilter(root)
-	
-	topo := Shaped(root)
 
-	// 2. 计算关键节点和路径
-	degrees := calculateDegrees(topo)
-	keyNodes, maxDegree := findKeyNodes(degrees)
-	keyPaths := findKeyPaths(generateAllPaths(topo, degrees, keyNodes))
-	criticalNodes := []string{}
-	for k, v := range keyNodes {
-		if v == true {
-			criticalNodes = append(criticalNodes, k)
-		}
-	}
-	return topo, criticalNodes, keyPaths, maxDegree
+	root := topo.GetTopo()
+	s, _ := json.Marshal(root.Elements.Edges)
+	fmt.Println(string(s))
+
+	root = ServiceFilter(root)
+
+	trafficMap, nodes, nodesMap, rootNodes := shaped1(root)
+	s, _ = json.Marshal(trafficMap)
+	fmt.Println(string(s))
+	s, _ = json.Marshal(nodes)
+	fmt.Println(string(s))
+	s, _ = json.Marshal(nodesMap)
+	fmt.Println(string(s))
+	s, _ = json.Marshal(rootNodes)
+	fmt.Println(string(s))
+
+	// 2. 计算关键路径并返回
+	maxSum, path, criticalPathNodeMetrics := FindMaxPath(trafficMap, nodes, nodesMap, rootNodes, SERVICE_DEPENDENCY)
+	return maxSum, path, nodesMap, criticalPathNodeMetrics
 }

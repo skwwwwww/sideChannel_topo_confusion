@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: gettopo
+  name: ce
 spec:
   containers:
-  - name: gettopo
-    image: get-topo
+  - name: ce
+    image: conductor-engine:v3
     imagePullPolicy: IfNotPresent
     
     livenessProbe:

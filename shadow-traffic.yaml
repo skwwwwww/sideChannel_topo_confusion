@@ -1,0 +1,16 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: productpage-shadow
+spec:
+  hosts:
+  - productpage
+  http:
+  - route:
+    - destination:
+        host: productpage
+        subset: v1
+    mirror:
+      host: traffic-service-0 # 完整服务名
+    mirrorPercentage:
+      value: 100  # 100%镜像（如需10%则设为10.0）

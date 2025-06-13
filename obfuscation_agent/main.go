@@ -1,16 +1,34 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
-var downstreamNodes []NodeInfo
-var stopChanList = []chan struct{}{}
+var downstreamNodes []DownstreamNodeConfig
+var ctx, cancel = context.WithCancel(context.Background())
+var ctx1, cancel1 = context.WithCancel(context.Background())
+var Initflag = false
+
+func init() {
+	// 配置 Zerolog：输出到控制台（彩色格式），带时间戳和调用者信息
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
+		With().
+		Timestamp().
+		Caller().
+		Logger()
+}
+
+// 设置下游节点时会先停止原先的虚拟链路
 func main() {
 	// 从环境变量读取初始节点
 	// 这个等大后期再研究
@@ -22,99 +40,101 @@ func main() {
 
 	http.HandleFunc("/set-nodes", setNodesHandler)
 	http.HandleFunc("/start-traffic", startTrafficHandler)
-	http.HandleFunc("/stop-traffic", stopTrafficHandler)
 	http.HandleFunc("/healthz", healthz)
 	http.HandleFunc("/ready", ready)
 
-	fmt.Println("Server started at :8080")
-	http.ListenAndServe(":8080", nil)
+	log.Info().Msg("Server started at :8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal().Err(err).Msg("Server failed to start")
+	}
 }
 
 func setNodesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx1, cancel1 = context.WithCancel(context.Background())
+	log.Debug().Msg("Downstreamset 1")
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		log.Warn().Str("method", r.Method).Msg("Invalid request method")
 		return
 	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		log.Error().Err(err).Msg("Error reading request body")
 		return
 	}
+	if Initflag {
+		cancel()
+		log.Info().Msg("Cancelled previous traffic generation")
+	}
 
-	var nodes []NodeInfo
+	var nodes []DownstreamNodeConfig
 	if err := json.Unmarshal(body, &nodes); err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return
 	}
 
 	downstreamNodes = nodes
-	fmt.Fprintf(w, "Downstream nodes set: %v\n", downstreamNodes)
+	log.Info().Interface("nodes", nodes).Msg("Downstream nodes updated")
+	fmt.Fprintf(w, "Downstream nodes set la1: %v\n", downstreamNodes)
+	Initflag = true
+	ctx, cancel = ctx1, cancel1
 }
 
 func startTrafficHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("startTrafficHandler 1")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	for _, downstreamNode := range downstreamNodes {
-
-		stopChan := make(chan struct{})
-		stopChanList = append(stopChanList,stopChan)
-		go TrafficControl(downstreamNode,stopChan)
+		go TrafficControl(downstreamNode, ctx)
 	}
 	fmt.Fprintf(w, "Traffic generation started\n")
-}
-
-func stopTrafficHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	for _, stopChan := range stopChanList {	
-		close(stopChan)
-	}
-	fmt.Fprintf(w, "Traffic generation stoped\n")
+	fmt.Printf("Traffic generation started\n")
 }
 
 // 这里是发送流量的具体逻辑
-func TrafficControl(node NodeInfo, stop <-chan struct{}) {
-	ticker := time.NewTicker(time.Second * time.Duration(node.nodeRPS))
+func TrafficControl(node DownstreamNodeConfig, ctx context.Context) {
+	fmt.Println("TrafficControl 1")
+	fmt.Printf("TrafficControl Duration %v", 1.0/node.Rps)
+	ticker := time.NewTicker(time.Second * time.Duration(1.0/node.Rps))
 	defer ticker.Stop()
 	// 添加请求超时控制
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 	for {
-		for i := 1; i <= 100; i++{
+		for i := 1; i <= 100; i++ {
 			select {
-			case <-stop:
+			case <-ctx.Done():
 				fmt.Println("Traffic sending stopped")
 				return
 			case <-ticker.C:
-				if i <= node.nodeErrorRate {
-					sendTraffic(client,true,node.nodeName)	
+				if float64(i) <= float64(node.ErrorRate) {
+					sendTraffic(client, true, node.DNS)
 				} else {
-					sendTraffic(client,false,node.nodeName)
+					sendTraffic(client, false, node.DNS)
 				}
 			}
 		}
-		
+
 	}
 }
 
-func sendTraffic(client *http.Client,isConfusion bool,nodeName string) (error){
-	url := fmt.Sprintf("http://%s", nodeName)
+func sendTraffic(client *http.Client, isConfusion bool, nodeName string) error {
+	fmt.Println("sendTraffic 1")
+	url := nodeName
 	fmt.Printf("Url %s\n", url)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", "http://"+url, nil)
 	if err != nil {
 		fmt.Printf("Error creating request to %s: %v\n", nodeName, err)
 		return err
 	}
-	// 添加固定的请求头	
-	if isConfusion {
+	// 添加固定的请求头
+	if !isConfusion {
 		req.Header.Add("X-Traffic-Type", "confusion")
 	} else {
 		req.Header.Add("X-Traffic-Type", "normal")

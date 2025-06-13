@@ -1,4 +1,4 @@
-package generaltg
+package generatetg
 
 import (
 	"bytes"
@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	criticalpath "github.com/sideChannel_topo_confusion/ce/criticalpath"
+	// criticalpath "github.com/sideChannel_topo_confusion/ce/criticalpath"
+	generateobfucationstrategy "github.com/sideChannel_topo_confusion/ce/generateobfucationstrategy"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,24 +41,25 @@ var gvr = schema.GroupVersionResource{
 }
 
 // 这里搞一个全局的client，用来创建相关的资源
-var client dynamic.Interface
-var clientset *kubernetes.Clientset
+// 使用之前要先init
+var Client dynamic.Interface
+var Clientset *kubernetes.Clientset
 
 // client初始化
-func initClient() {
+func InitClient() {
 	config, err := clientcmd.BuildConfigFromFlags("", "./config")
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %v", err)
 	}
 
 	// 创建 DynamicClient
-	client, err = dynamic.NewForConfig(config)
+	Client, err = dynamic.NewForConfig(config)
 	if err != nil {
 		log.Fatalf("无法创建 DynamicClient: %v", err)
 	}
 
 	// 创建 Kubernetes 客户端
-	clientset, err = kubernetes.NewForConfig(config)
+	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatalf("Failed to create Kubernetes client: %v", err)
 	}
@@ -68,7 +70,7 @@ func initClient() {
 func CreateOA(namespace string, instanceID string) *corev1.Service {
 	// 创建 Deployment
 	deployment := configDeployment(instanceID)
-	_, err := clientset.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	_, err := Clientset.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("Failed to create deployment %s: %v", instanceID, err)
 	}
@@ -76,7 +78,7 @@ func CreateOA(namespace string, instanceID string) *corev1.Service {
 
 	// 创建 Service
 	service := configService(instanceID)
-	createService, err := clientset.CoreV1().Services("default").Create(context.TODO(), service, metav1.CreateOptions{})
+	createService, err := Clientset.CoreV1().Services("default").Create(context.TODO(), service, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("Failed to create service %s: %v", instanceID, err)
 	}
@@ -92,7 +94,23 @@ func CreateEnvoyFilter(namespace string, instanceName string) {
 	envoyConfig.Namespace = namespace
 	envoyFilter := configEnvoyFilter(envoyConfig, envoyConfig.App)
 	// 创建 EnvoyFilter
-	_, err := client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
+	_, err := Client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Errorf("无法创建 EnvoyFilter: %v", err)
+	}
+
+	fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
+
+}
+
+func CreateRootEnvoyFilter(namespace string, instanceName string) {
+	envoyConfig := EnvoyFilterConfig{}
+	// envoyConfig.App = "traffic-service-" + instanceID
+	envoyConfig.App = instanceName
+	envoyConfig.Namespace = namespace
+	envoyFilter := configRootEnvoyFilter(envoyConfig, envoyConfig.App)
+	// 创建 EnvoyFilter
+	_, err := Client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 	if err != nil {
 		fmt.Errorf("无法创建 EnvoyFilter: %v", err)
 	}
@@ -102,100 +120,31 @@ func CreateEnvoyFilter(namespace string, instanceName string) {
 }
 
 // 这里我觉的还需要解耦以下，他的责任只是创建OA
-func GeneralTrafficGenertator() {
-	// 从上一个包获取关键路径
-	topo, _, keyPaths, maxDegree := criticalpath.GetCriticalPaths()
-	hostAndPorts := [][]string{}
-	initClient()
+// func GeneralTrafficGenertator() {
 
-	instanceCount := 0
+// 	for i := 0; i < instanceCount-1; i++ {
 
-	// 定义要创建的实例个数,关键节点的度或者关键路径的长度
-	maxLen := 0
-	for _, v := range keyPaths {
-		maxLen = max(len(v.Nodes), maxLen)
-	}
-	instanceCount = max(maxLen, maxDegree)
-	// 确定namespace
-	namespace := topo.Nodes[keyPaths[0].Nodes[0]].Data.Namespace
+// 		nextNodes := getNextNLayers(hostAndPorts, i)
+// 		serviceURL := "http://" + hostAndPorts[i][0] + "/healthz"
+// 		for {
+// 			err := checkService(serviceURL)
+// 			if err == nil {
+// 				break
+// 			}
 
-	// 为每个实例创建 Deployment 和 Service
-	for i := 1; i <= instanceCount; i++ {
+// 			if i >= maxRetries {
+// 				fmt.Errorf("超过最大重试次数%d次", maxRetries)
+// 			}
 
-		instanceID := fmt.Sprintf("%d", i) // 生成唯一的实例 ID，例如 a, b, c
+// 			delay := retryDelay * time.Duration(i+1) // 线性退避
+// 			fmt.Printf("第%d次重试，等待%s后重试\n", i+1, delay)
+// 			time.Sleep(delay)
+// 		}
+// 		SetDownstreamNode(nextNodes, hostAndPorts[i][0])
 
-		createService := CreateOA(namespace, instanceID)
-		CreateEnvoyFilter(namespace, "traffic-service-"+instanceID)
+// 	}
 
-		// 获取第一个端口（如果有多个端口，可以根据需要选择）
-		if len(createService.Spec.Ports) == 0 {
-			log.Fatal("Service 没有定义任何端口")
-		}
-		port := createService.Spec.Ports[0].Port
-		dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", createService.Name, createService.Namespace)
-		//dnsName := fmt.Sprintf("%s.%s.svc", createService.Name, createService.Namespace)
-		//dnsName := createService.Spec.ClusterIP
-		hostAndPort := []string{}
-		hostAndPort = append(hostAndPort, ""+dnsName+":"+fmt.Sprint(port))
-		hostAndPorts = append(hostAndPorts, hostAndPort)
-	}
-
-	for _, v := range keyPaths {
-		//instanceID := fmt.Sprintf("S%d", i)
-		keyPathLen := len(v.Nodes)
-		node := v.Nodes[keyPathLen-1]
-		namespace := topo.Nodes[node].Data.Namespace
-		app := topo.Nodes[node].Data.App
-		CreateEnvoyFilter(namespace, app)
-
-		service, err := clientset.CoreV1().Services(namespace).Get(context.TODO(), app, metav1.GetOptions{})
-		if err != nil {
-			log.Fatalf("无法获取 Service: %v", err)
-		}
-
-		// 6. 提取 ClusterIP (host) 和 Port
-		dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, service.Namespace)
-
-		// 获取第一个端口（如果有多个端口，可以根据需要选择）
-		if len(service.Spec.Ports) == 0 {
-			log.Fatal("Service 没有定义任何端口")
-		}
-		port := service.Spec.Ports[0].Port
-		len := len(hostAndPorts)
-		hostAndPorts[len-1] = append(hostAndPorts[len-1], ""+dnsName+":"+fmt.Sprintf("%d", port))
-
-	}
-
-	for i := 0; i < instanceCount-1; i++ {
-
-		nextNodes := getNextNLayers(hostAndPorts, i)
-		serviceURL := "http://" + hostAndPorts[i][0] + "/healthz"
-		for {
-			err := checkService(serviceURL)
-			if err == nil {
-				break
-			}
-
-			if i >= maxRetries {
-				fmt.Errorf("超过最大重试次数%d次", maxRetries)
-			}
-
-			delay := retryDelay * time.Duration(i+1) // 线性退避
-			fmt.Printf("第%d次重试，等待%s后重试\n", i+1, delay)
-			time.Sleep(delay)
-		}
-		SetDownstreamNode(nextNodes, hostAndPorts[i][0])
-
-	}
-
-}
-func checkService(serviceURL string) error {
-	resp, err := http.Get(serviceURL)
-	if err != nil || resp.StatusCode != 200 {
-		return fmt.Errorf("服务不可用，状态码: %d", resp.StatusCode)
-	}
-	return nil
-}
+// }
 
 // 配置 Deployment
 func configDeployment(instanceID string) *appsv1.Deployment {
@@ -220,7 +169,7 @@ func configDeployment(instanceID string) *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:  "traffic-generator",
-							Image: "traffic-generator:1.0",
+							Image: "obfuscation_agent:v3",
 							Env: []corev1.EnvVar{
 								{
 									Name:  "PORT",
@@ -335,7 +284,123 @@ function envoy_on_request(request_handle)
   if headers:get("X-Traffic-Type") == "confusion" then
     request_handle:respond({[":status"] = "200"}, "Request header not allowed")
   end
+  if headers:get("X-Traffic-Type") == "normal" then
+    request_handle:respond({[":status"] = "500"}, "Request header not allowed")
+  end
 end`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// 配置 EnvoyFilter
+// 这里的配置是为了让EnvoyFilter可以拦截流量
+func configRootEnvoyFilter(config EnvoyFilterConfig, dstDNS string) *unstructured.Unstructured {
+	// 定义 Lua 脚本模板，转义 % 字符并使用 %s 占位符
+	luaTemplate := `
+function generate_span_id()
+    local file = io.open("/dev/urandom", "rb")
+    if not file then return nil end
+    local bytes = file:read(8)
+    file:close()
+    return string.format("%%02x%%02x%%02x%%02x%%02x%%02x%%02x%%02x",
+        string.byte(bytes, 1), string.byte(bytes, 2), string.byte(bytes, 3), string.byte(bytes, 4),
+        string.byte(bytes, 5), string.byte(bytes, 6), string.byte(bytes, 7), string.byte(bytes, 8))
+end
+
+function envoy_on_request(request_handle)
+    local original_headers = request_handle:headers()
+    local headers_to_send = {
+        [":method"] = "GET",
+        [":path"] = "/api",
+        [":authority"] = "%s",
+        [":scheme"] = "http",
+        ["X-Traffic-Type"] = "confusion",
+        ["Content-Length"] = "0"
+    }
+    local request_id = original_headers:get("x-request-id")
+    if request_id then
+        headers_to_send["x-request-id"] = request_id
+    end
+    local trace_id = original_headers:get("x-b3-traceid")
+    if trace_id then
+        headers_to_send["x-b3-traceid"] = trace_id
+        local parent_span_id = original_headers:get("x-b3-spanid")
+        if parent_span_id then
+            headers_to_send["x-b3-parentspanid"] = parent_span_id
+        end
+        headers_to_send["x-b3-spanid"] = generate_span_id()
+        local sampled = original_headers:get("x-b3-sampled")
+        if sampled then
+            headers_to_send["x-b3-sampled"] = sampled
+        end
+    end
+    local istio_attributes = original_headers:get("x-istio-attributes")
+    if istio_attributes then
+        headers_to_send["x-istio-attributes"] = istio_attributes
+    end
+    request_handle:logWarn("生成带有跟踪上下文的新请求...")
+    local cluster_name = "outbound|80||%s"
+    local ok, err = request_handle:httpCall(
+        cluster_name,
+        headers_to_send,
+        nil, -- request body
+        5000 -- timeout
+    )
+    if not ok then
+        request_handle:logWarn("生成请求失败: " .. tostring(err))
+    else
+        request_handle:logWarn("已成功发送带有跟踪上下文的请求。")
+    end
+end
+`
+
+	// 使用 dstDNS 格式化 Lua 脚本
+	luaCode := fmt.Sprintf(luaTemplate, dstDNS, dstDNS)
+
+	// 定义 EnvoyFilter 对象
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "networking.istio.io/v1alpha3",
+			"kind":       "EnvoyFilter",
+			"metadata": map[string]interface{}{
+				"name":      "filter-confusion-header-root",
+				"namespace": config.Namespace,
+			},
+			"spec": map[string]interface{}{
+				"workloadSelector": map[string]interface{}{
+					"labels": map[string]interface{}{
+						"app": config.App,
+					},
+				},
+				"configPatches": []interface{}{
+					map[string]interface{}{
+						"applyTo": "HTTP_FILTER",
+						"match": map[string]interface{}{
+							"context": "SIDECAR_OUTBOUND",
+							"listener": map[string]interface{}{
+								"filterChain": map[string]interface{}{
+									"filter": map[string]interface{}{
+										"name": "envoy.filters.network.http_connection_manager",
+										"subFilter": map[string]interface{}{
+											"name": "envoy.filters.http.router",
+										},
+									},
+								},
+							},
+						},
+						"patch": map[string]interface{}{
+							"operation": "INSERT_BEFORE",
+							"value": map[string]interface{}{
+								"name": "envoy.filters.http.lua",
+								"typed_config": map[string]interface{}{
+									"@type":      "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua",
+									"inlineCode": luaCode,
 								},
 							},
 						},
@@ -368,17 +433,17 @@ func deleteService(clientset *kubernetes.Clientset, namespace string, instanceID
 	return nil
 }
 
-func etDownstreamNode(nodes []string, service string) {
-	urls := []string{}
-	for _, v := range nodes {
-		urls = append(urls, v+"/api")
+func SetDownstreamNode(downstreamNodeConfigs []generateobfucationstrategy.DownstreamNodeConfig, service string) {
+	// urls := []string{}
+	for i := 0; i < len(downstreamNodeConfigs); i++ {
+		downstreamNodeConfigs[i].DNS += "/api"
 	}
 	targetSetNode := "http://" + service + "/set-nodes"
 
 	client := &http.Client{}
 
 	// 序列化为 JSON
-	requestBody, err := json.Marshal(urls)
+	requestBody, err := json.Marshal(downstreamNodeConfigs)
 	if err != nil {
 		log.Fatalf("JSON 序列化失败: %v", err)
 	}
@@ -426,6 +491,11 @@ func etDownstreamNode(nodes []string, service string) {
 	if err1 != nil {
 		log.Fatalf("无法创建 HTTP 请求: %v", err)
 	}
+
+	// 记录请求头
+	log.Printf("请求头: %+v", req1.Header)
+	log.Printf("Url: %+v", req1.URL)
+
 	//client1 := &http.Client{}
 	resp, err = client.Do(req1)
 	if err != nil {
