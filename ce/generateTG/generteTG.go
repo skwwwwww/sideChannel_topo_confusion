@@ -103,19 +103,16 @@ func CreateEnvoyFilter(namespace string, instanceName string) {
 
 }
 
-func CreateRootEnvoyFilter(namespace string, instanceName string) {
-	envoyConfig := EnvoyFilterConfig{}
-	// envoyConfig.App = "traffic-service-" + instanceID
-	envoyConfig.App = instanceName
-	envoyConfig.Namespace = namespace
-	envoyFilter := configRootEnvoyFilter(envoyConfig, envoyConfig.App)
+func CreateRootEnvoyFilter(config EnvoyFilterConfig, instanceName string) {
+
+	envoyFilter := configRootEnvoyFilter(config, instanceName)
 	// 创建 EnvoyFilter
-	_, err := Client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
+	_, err := Client.Resource(gvr).Namespace(config.Namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 	if err != nil {
 		fmt.Errorf("无法创建 EnvoyFilter: %v", err)
 	}
 
-	fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
+	fmt.Printf("成功创建 EnvoyFilter: %s/%s envoyfilter\n", config.Namespace, config.App)
 
 }
 
@@ -301,14 +298,14 @@ end`,
 // 配置 EnvoyFilter
 // 这里的配置是为了让EnvoyFilter可以拦截流量
 func configRootEnvoyFilter(config EnvoyFilterConfig, dstDNS string) *unstructured.Unstructured {
-	// 定义 Lua 脚本模板，转义 % 字符并使用 %s 占位符
+	// 定义 Lua 脚本模板，双重转义 % 字符以避免与 Go 的 fmt.Sprintf 冲突
 	luaTemplate := `
 function generate_span_id()
     local file = io.open("/dev/urandom", "rb")
     if not file then return nil end
     local bytes = file:read(8)
     file:close()
-    return string.format("%%02x%%02x%%02x%%02x%%02x%%02x%%02x%%02x",
+    return string.format("%%%%02x%%%%02x%%%%02x%%%%02x%%%%02x%%%%02x%%%%02x%%%%02x",
         string.byte(bytes, 1), string.byte(bytes, 2), string.byte(bytes, 3), string.byte(bytes, 4),
         string.byte(bytes, 5), string.byte(bytes, 6), string.byte(bytes, 7), string.byte(bytes, 8))
 end
@@ -344,7 +341,6 @@ function envoy_on_request(request_handle)
     if istio_attributes then
         headers_to_send["x-istio-attributes"] = istio_attributes
     end
-    request_handle:logWarn("生成带有跟踪上下文的新请求...")
     local cluster_name = "outbound|80||%s"
     local ok, err = request_handle:httpCall(
         cluster_name,
@@ -354,8 +350,6 @@ function envoy_on_request(request_handle)
     )
     if not ok then
         request_handle:logWarn("生成请求失败: " .. tostring(err))
-    else
-        request_handle:logWarn("已成功发送带有跟踪上下文的请求。")
     end
 end
 `

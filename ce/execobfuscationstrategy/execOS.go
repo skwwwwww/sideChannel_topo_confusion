@@ -24,7 +24,12 @@ func Execobfuscationstrategy() {
 		generaltg.CreateEnvoyFilter(envoyFilterConfig[i].Namespace, envoyFilterConfig[i].InstanceName)
 	}
 	if len(envoyFilterConfig) > 0 && len(oaConfig) > 0 {
-		generaltg.CreateRootEnvoyFilter(envoyFilterConfig[len(envoyFilterConfig)-1].Namespace, fmt.Sprintf("%s.%s.svc.cluster.local", "traffic-service-"+oaConfig[0].InstanceID, oaConfig[0].Namespace))
+		config := generaltg.EnvoyFilterConfig{
+			Namespace: (envoyFilterConfig[len(envoyFilterConfig)-1].Namespace),
+			App:       envoyFilterConfig[len(envoyFilterConfig)-1].InstanceName,
+		}
+
+		generaltg.CreateRootEnvoyFilter(config, fmt.Sprintf("%s.%s.svc.cluster.local", "traffic-service-"+oaConfig[0].InstanceID, oaConfig[0].Namespace))
 	}
 
 	// 这里需要修改OA和， 最后一层不用设置，所以-1
