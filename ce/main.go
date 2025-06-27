@@ -3,13 +3,9 @@
 package main
 
 import (
-	// "fmt"
-
-	// "html/template"
 	"encoding/json"
 	"fmt"
 
-	//"fmt"
 	"net/http"
 
 	execobfuscationstrategy "github.com/sideChannel_topo_confusion/ce/execobfuscationstrategy"
@@ -26,8 +22,6 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 	for {
 	}
-
-	//criticalpath.GetTrafficMertics("default", "ratings", criticalpath.TRAFFIC)
 }
 
 // HealthStatus represents the health status of the application.

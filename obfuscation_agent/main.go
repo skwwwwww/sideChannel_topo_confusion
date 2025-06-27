@@ -5,41 +5,81 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
-	"os"
+	"sync"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 var downstreamNodes []DownstreamNodeConfig
-var ctx, cancel = context.WithCancel(context.Background())
-var ctx1, cancel1 = context.WithCancel(context.Background())
-var Initflag = false
 
-func init() {
-	// 配置 Zerolog：输出到控制台（彩色格式），带时间戳和调用者信息
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
-		With().
-		Timestamp().
-		Caller().
-		Logger()
+// TrafficManager 负责管理流量生成协程的生命周期
+type TrafficManager struct {
+	mu              sync.Mutex             // 保护共享状态
+	currentCtx      context.Context        // 当前的上下文
+	currentCancel   context.CancelFunc     // 当前的取消函数
+	downstreamNodes []DownstreamNodeConfig // 当前的下游节点配置
 }
 
-// 设置下游节点时会先停止原先的虚拟链路
-func main() {
-	// 从环境变量读取初始节点
-	// 这个等大后期再研究
-	if envNodes := os.Getenv("INITIAL_NODES"); envNodes != "" {
-		if err := json.Unmarshal([]byte(envNodes), &downstreamNodes); err != nil {
-			fmt.Printf("Error parsing INITIAL_NODES: %v\n", err)
-		}
+var trafficManager *TrafficManager
+
+// NewTrafficManager 创建并初始化 TrafficManager
+func NewTrafficManager() *TrafficManager {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &TrafficManager{
+		currentCtx:      ctx,
+		currentCancel:   cancel,
+		downstreamNodes: make([]DownstreamNodeConfig, 0),
+	}
+}
+
+// 全局共享的 HTTP 客户端
+var sharedHTTPClient *http.Client
+
+// UpdateNodesAndRestartTraffic 更新节点配置并重新启动流量生成
+func (tm *TrafficManager) UpdateNodesAndRestartTraffic(newNodes []DownstreamNodeConfig) {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+
+	// 1. 停止之前的协程
+	if tm.currentCancel != nil {
+		log.Info().Msg("Calling previous cancel function to stop old goroutines.")
+		tm.currentCancel()
+		// 额外等待一下，确保旧协程有时间退出，避免新的流量立即启动导致瞬时RPS过高
+		// 在生产环境中可能需要更复杂的机制来确保所有协程都已停止 (例如 WaitGroup)
+		time.Sleep(100 * time.Millisecond)
 	}
 
+	// 2. 创建新的 Context 和 CancelFunc
+	newCtx, newCancel := context.WithCancel(context.Background())
+	tm.currentCtx = newCtx
+	tm.currentCancel = newCancel
+	tm.downstreamNodes = newNodes
+
+	log.Info().Interface("nodes", tm.downstreamNodes).Msg("Starting new traffic goroutines.")
+	// 3. 根据新的配置启动新的协程
+	for _, node := range tm.downstreamNodes {
+		// 将新的上下文传递给每个 TrafficControl 协程
+		go TrafficControl(tm.currentCtx, node)
+	}
+}
+
+func main() {
+	trafficManager = NewTrafficManager()
+	// 初始化全局共享的 HTTP 客户端
+	sharedHTTPClient = &http.Client{
+		Timeout: 10 * time.Second, // 设置全局超时
+		// 还可以根据需求配置 Transport，例如调整最大空闲连接数
+		Transport: &http.Transport{
+			MaxIdleConns:        100,              // 最大空闲连接数
+			MaxIdleConnsPerHost: 20,               // 每个Host的最大空闲连接数
+			IdleConnTimeout:     90 * time.Second, // 空闲连接超时时间
+		},
+	}
 	http.HandleFunc("/set-nodes", setNodesHandler)
-	http.HandleFunc("/start-traffic", startTrafficHandler)
+
 	http.HandleFunc("/healthz", healthz)
 	http.HandleFunc("/ready", ready)
 
@@ -50,8 +90,7 @@ func main() {
 }
 
 func setNodesHandler(w http.ResponseWriter, r *http.Request) {
-	ctx1, cancel1 = context.WithCancel(context.Background())
-	log.Debug().Msg("Downstreamset 1")
+	log.Debug().Msg("Downstreamset initiated.")
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -64,88 +103,80 @@ func setNodesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msg("Error reading request body")
 		return
 	}
-	if Initflag {
-		cancel()
-		log.Info().Msg("Cancelled previous traffic generation")
-	}
 
 	var nodes []DownstreamNodeConfig
 	if err := json.Unmarshal(body, &nodes); err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
+		log.Error().Err(err).Msg("Error parsing request body")
 		return
 	}
 
-	downstreamNodes = nodes
-	log.Info().Interface("nodes", nodes).Msg("Downstream nodes updated")
-	fmt.Fprintf(w, "Downstream nodes set la1: %v\n", downstreamNodes)
-	Initflag = true
-	ctx, cancel = ctx1, cancel1
+	// 使用 TrafficManager 来更新节点并重启流量
+	trafficManager.UpdateNodesAndRestartTraffic(nodes)
+
+	log.Info().Interface("nodes", nodes).Msg("Downstream nodes updated and traffic restarted.")
+	fmt.Fprintf(w, "Downstream nodes set and traffic restarted: %v\n", nodes)
 }
 
-func startTrafficHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("startTrafficHandler 1")
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
+// TrafficControl 是发送流量的具体逻辑，现在接受一个 context 参数
+func TrafficControl(ctx context.Context, node DownstreamNodeConfig) {
+	log.Info().Str("node_dns", node.DNS).Float64("rps", node.Rps).Float64("error_rate", node.ErrorRate).Msg("TrafficControl goroutine started.")
 
-	for _, downstreamNode := range downstreamNodes {
-		go TrafficControl(downstreamNode, ctx)
+	// 计算发送间隔
+	interval := time.Duration(float64(time.Second) / node.Rps)
+	if interval <= 0 { // 防止除以零或非常小的RPS导致无效间隔
+		interval = time.Millisecond * 10 // 至少10ms间隔，避免CPU飙升
+		log.Warn().Str("node_dns", node.DNS).Msg("RPS is too high or zero, setting interval to 10ms.")
 	}
-	fmt.Fprintf(w, "Traffic generation started\n")
-	fmt.Printf("Traffic generation started\n")
-}
-
-// 这里是发送流量的具体逻辑
-func TrafficControl(node DownstreamNodeConfig, ctx context.Context) {
-	fmt.Println("TrafficControl 1")
-	fmt.Printf("TrafficControl Duration %v", 1.0/node.Rps)
-	ticker := time.NewTicker(time.Second * time.Duration(1.0/node.Rps))
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	// 添加请求超时控制
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	for {
-		for i := 1; i <= 100; i++ {
-			select {
-			case <-ctx.Done():
-				fmt.Println("Traffic sending stopped")
-				return
-			case <-ticker.C:
-				if float64(i) <= float64(node.ErrorRate) {
-					sendTraffic(client, true, node.DNS)
-				} else {
-					sendTraffic(client, false, node.DNS)
-				}
-			}
-		}
 
+	// 添加请求超时控制
+	client := sharedHTTPClient
+
+	randSource := rand.New(rand.NewSource(time.Now().UnixNano())) // 每个协程使用独立的随机源
+
+	for {
+		select {
+		case <-ctx.Done():
+			// 接收到取消信号，协程优雅退出
+			log.Info().Str("node_dns", node.DNS).Msg("TrafficControl goroutine stopping due to context cancellation.")
+			return
+		case <-ticker.C:
+			// 每当 ticker 触发时发送一次流量
+			isConfusion := false // 默认不是混淆流量
+			// 根据 ErrorRate 决定是否发送混淆流量
+			// ErrorRate 假定为百分比，例如 5 代表 5%
+			if randSource.Float64()*100 < node.ErrorRate {
+				isConfusion = true
+			}
+			sendTraffic(client, isConfusion, node.DNS)
+		}
 	}
 }
 
 func sendTraffic(client *http.Client, isConfusion bool, nodeName string) error {
-	fmt.Println("sendTraffic 1")
-	url := nodeName
-	fmt.Printf("Url %s\n", url)
-	req, err := http.NewRequest("GET", "http://"+url, nil)
+	url := "http://" + nodeName
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf("Error creating request to %s: %v\n", nodeName, err)
+		log.Error().Err(err).Str("url", url).Msg("Error creating request")
 		return err
 	}
-	// 添加固定的请求头
-	if !isConfusion {
-		req.Header.Add("X-Traffic-Type", "confusion")
-	} else {
-		req.Header.Add("X-Traffic-Type", "normal")
+
+	trafficType := "normal"
+	if isConfusion {
+		trafficType = "confusion"
 	}
+	req.Header.Add("X-Traffic-Type", trafficType)
+
+	log.Debug().Str("url", url).Str("traffic_type", trafficType).Msg("Sending traffic")
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Error sending request to %s: %v\n", nodeName, err)
+		log.Error().Err(err).Str("url", url).Msg("Error sending request")
 		return err
 	}
-	fmt.Printf("Response from %s: %s\n", nodeName, resp.Status)
-	resp.Body.Close()
+	defer resp.Body.Close()
+	log.Info().Str("url", url).Str("status", resp.Status).Msg("Response received")
 	return nil
 }
 
@@ -193,22 +224,10 @@ func ready(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// isReady checks if the application is ready.
-// Replace this with your actual readiness check logic.
 func isReady() bool {
-	// 示例：检查缓存是否已加载
-	// return cache.IsLoaded()
-
-	// 这里只是一个示例，返回true表示就绪
 	return true
 }
 
-// isHealthy checks if the application is healthy.
-// Replace this with your actual health check logic.
 func isHealthy() bool {
-	// 示例：检查数据库连接
-	// return db.Ping() == nil
-
-	// 这里只是一个示例，返回true表示健康
 	return true
 }

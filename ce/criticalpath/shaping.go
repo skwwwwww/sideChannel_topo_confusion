@@ -1,12 +1,8 @@
 package criticalpath
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"math"
-	"net/http"
 	"strconv"
 
 	topo "github.com/sideChannel_topo_confusion/ce/topo"
@@ -158,7 +154,7 @@ func topologicalSort(adj [][]computeEdge) []int {
 }
 
 // FindMaxPath 寻找指标和最大的路径
-func FindMaxPath(trafficMap [][]TrafficEdge, nodes []string, nodesMap map[string]TrafficNode, rootNodes []TrafficNode, appType int) (maxSum float64, path []string, criticalPathNodeMetrics []CriticalPathNodeMetric) {
+func FindCriticalPath(trafficMap [][]TrafficEdge, nodes []string, nodesMap map[string]TrafficNode, rootNodes []TrafficNode, appType int) (maxSum float64, path []string, criticalPathNodeMetrics []CriticalPathNodeMetric) {
 
 	fmt.Println(trafficMap)
 
@@ -253,39 +249,4 @@ func FindMaxPath(trafficMap [][]TrafficEdge, nodes []string, nodesMap map[string
 		criticalPathNodeMetrics[i+1].ErrorRate = trafficMap[stratNum][endNum].errorRate
 	}
 	return maxSum, path, criticalPathNodeMetrics
-}
-
-// metricTpye 目前有两种TRAFFIC和METRICS
-func GetTrafficMertics(namespace, service, metricTpye string) {
-	url := "http://192.168.200.153:20001/kiali/api/namespaces/" + namespace + "/services/" + service + "/graph?duration=60s&graphType=workload&includeIdleEdges=false&injectServiceNodes=true&responseTime=95&throughputType=request&appenders=deadNode,istio,serviceEntry,meshCheck,workloadEntry,securityPolicy,responseTime,throughput&rateGrpc=requests&rateHttp=requests&rateTcp=sent"
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatalf("Error fetching data: %v", err)
-	}
-	defer resp.Body.Close()
-	//读取响应数据
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Error reading response body: %v", err)
-	}
-
-	log.Print("%+v", string(body))
-	if metricTpye == METRICS {
-		var metrics InboundMetrics
-		if err := json.Unmarshal(body, &metrics); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%+v", metrics)
-	}
-
-	if metricTpye == TRAFFIC {
-		var topology ServiceTopology
-		if err := json.Unmarshal(body, &topology); err != nil {
-			log.Fatal(err)
-		}
-		// 访问数据示例
-		fmt.Println("第一个节点的应用名称:", topology.Elements.Nodes[0].Data.App)
-		fmt.Println("第一条边的协议:", topology.Elements.Edges[0].Data.Traffic.Protocol)
-	}
-
 }

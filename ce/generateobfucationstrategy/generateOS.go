@@ -40,9 +40,9 @@ type DownstreamNodeConfig struct {
 	ErrorRate  float64
 }
 
-func Generateconfucationstrategy() ([]OAConfig, []EnvoyFilterConfig, [][]DownstreamNodeConfig) {
+func Generateconfucationstrategy(path []string, nodesMap map[string]criticalpath.TrafficNode, criticalPathNodeMetrics []criticalpath.CriticalPathNodeMetric) ([]OAConfig, []EnvoyFilterConfig, [][]DownstreamNodeConfig) {
 	// path中包含了每个关键路径的
-	_, path, nodesMap, criticalPathNodeMetrics := criticalpath.GetCriticalPaths()
+	// _, path, nodesMap, criticalPathNodeMetrics := criticalpath.GetCriticalPaths()
 	oaConfig := GenerateOAStrategy(path, nodesMap)
 	envoyFilterConfig := GenerateEFStrategy(path, nodesMap)
 	downstreamNodeConfig := GenerateDownstreamNodesStrategy(path, nodesMap, criticalPathNodeMetrics, criticalpath.SERVICE_DEPENDENCY)
@@ -65,7 +65,7 @@ func GenerateOAStrategy(path []string, nodesMap map[string]criticalpath.TrafficN
 // 这里的Name分为两部分, 一部分是自己创建的ID，一部分是关键路径上的Service
 func GenerateEFStrategy(path []string, nodesMap map[string]criticalpath.TrafficNode) []EnvoyFilterConfig {
 	len := len(path)
-	fmt.Println("path len : %d", len)
+	log.Printf("path len : %d\n", len)
 	envoyFilterConfig := make([]EnvoyFilterConfig, len*2)
 
 	for i := 0; i < len; i++ {
@@ -88,61 +88,72 @@ func GenerateDownstreamNodesStrategy(path []string, nodesMap map[string]critical
 	// 这里需要根据OA的数量来创建
 	// 每一个OA都对应了一个下游节点配置
 	n := len(path)
-	fmt.Printf("critical Path: %v\n", path)
+	log.Printf("critical Path: %v\n", path)
 	wService, wRPS, wError := getObfucationWeights(ApplicationClass)
 
 	// 这里需要确定一下每一层的RPS，等相关zhi
 	config, err := clientcmd.BuildConfigFromFlags("", "./config")
 	if err != nil {
-		log.Fatalf("Failed to load kubeconfig: %v", err)
+		log.Fatalf("无法加载kubeconfig for GenerateDownstreamNodesStrategy: %v", err)
 	}
 	// 创建 Kubernetes 客户端
 	Clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatalf("Failed to create Kubernetes client: %v", err)
+		log.Fatalf("无法创建Kubernetes客户端 for GenerateDownstreamNodesStrategy: %v", err)
 	}
 
 	downstreamNodeConfigs := make([][]DownstreamNodeConfig, n)
-	for i := 0; i+1 < n; i++ {
-		for j := 1; j <= n-2 && j+i < n; j++ {
+	// 遍历每个OA实例（从0到 n-2），因为最后一层OA不需要设置下游节点
+	for i := 0; i < n; i++ {
+		if i+1 >= n { // 最后一层OA不需要设置下游节点
+			continue
+		}
 
-			// 这个namespace是可以二次利用的
-			namespace := nodesMap[path[i]].Namespace
-			// i + j 就是下一层到下N-2层
-			dnsName := fmt.Sprintf("%s.%s.svc.cluster.local", "traffic-service-"+fmt.Sprint(j+i), namespace)
-			// 先把OA加入进去
+		// `j` 代表从当前OA (i) 到下游节点在关键路径中的相对距离
+		// 这意味着每个OA[i]会连接到 OA[i+1], OA[i+2], ..., OA[n-1]
+		// 以及对应的 App[i+1], App[i+2], ..., App[n-1]
+		for j := 1; i+j < n; j++ {
+			targetPathNodeIndex := i + j // 目标节点在关键路径中的索引
+
+			// 配置指向另一个 OA 实例的下游节点
+			targetOANamespace := nodesMap[path[targetPathNodeIndex]].Namespace
+			targetOAInstanceID := fmt.Sprintf("%d", targetPathNodeIndex)
+			oaDNS := fmt.Sprintf("%s.%s.svc.cluster.local", "traffic-service-"+targetOAInstanceID, targetOANamespace)
+
 			downstreamNodeConfigOA := DownstreamNodeConfig{
-				DNS:        dnsName + ":80",
-				ServiceNum: criticalPathNodeMetrics[i+1].ServiceNum * wService,
-				Rps:        criticalPathNodeMetrics[i+1].Rps * wRPS,
-				ErrorRate:  criticalPathNodeMetrics[i+1].ErrorRate * wError,
+				DNS:        oaDNS + ":80", // 假设 traffic-service 监听 80 端口
+				ServiceNum: criticalPathNodeMetrics[targetPathNodeIndex].ServiceNum * wService,
+				Rps:        criticalPathNodeMetrics[targetPathNodeIndex].Rps * wRPS,
+				ErrorRate:  criticalPathNodeMetrics[targetPathNodeIndex].ErrorRate * wError,
 			}
 			downstreamNodeConfigs[i] = append(downstreamNodeConfigs[i], downstreamNodeConfigOA)
-			app := nodesMap[path[i+j]].App
-			service, err := Clientset.CoreV1().Services(namespace).Get(context.TODO(), app, metav1.GetOptions{})
+
+			// 配置指向原始应用的下游节点
+			app := nodesMap[path[targetPathNodeIndex]].App
+			appNamespace := nodesMap[path[targetPathNodeIndex]].Namespace // 应用的命名空间
+			service, err := Clientset.CoreV1().Services(appNamespace).Get(context.TODO(), app, metav1.GetOptions{})
 			if err != nil {
-				log.Fatalf("无法获取 Service: %v", err)
+				log.Printf("警告: 无法获取服务 %s 在命名空间 %s 中: %v。跳过此下游节点配置。\n", app, appNamespace, err)
+				continue // 如果服务不存在，则跳过此下游节点
 			}
 
-			// 6. 提取 ClusterIP (host) 和 Port
-			dnsName = fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, service.Namespace)
-
-			// 获取第一个端口（如果有多个端口，可以根据需要选择）
 			if len(service.Spec.Ports) == 0 {
-				log.Fatal("Service 没有定义任何端口")
+				log.Printf("警告: 服务 %s 在命名空间 %s 中未定义任何端口。跳过此下游节点配置。\n", app, appNamespace)
+				continue
 			}
 			port := service.Spec.Ports[0].Port
 
-			downstreamNodeConfig := DownstreamNodeConfig{
-				DNS:        "" + dnsName + ":" + fmt.Sprintf("%d", port),
-				ServiceNum: criticalPathNodeMetrics[i+1].ServiceNum * wService,
-				Rps:        criticalPathNodeMetrics[i+1].Rps * wRPS,
-				ErrorRate:  criticalPathNodeMetrics[i+1].ErrorRate * wError,
+			appDNS := fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, service.Namespace)
+			downstreamNodeConfigApp := DownstreamNodeConfig{
+				DNS:        appDNS + ":" + fmt.Sprintf("%d", port),
+				ServiceNum: criticalPathNodeMetrics[targetPathNodeIndex].ServiceNum * wService,
+				Rps:        criticalPathNodeMetrics[targetPathNodeIndex].Rps * wRPS,
+				ErrorRate:  criticalPathNodeMetrics[targetPathNodeIndex].ErrorRate * wError,
 			}
-			downstreamNodeConfigs[i] = append(downstreamNodeConfigs[i], downstreamNodeConfig)
+			downstreamNodeConfigs[i] = append(downstreamNodeConfigs[i], downstreamNodeConfigApp)
 		}
 	}
-	fmt.Printf("downstreamNodeConfigs : %v\n", downstreamNodeConfigs)
+	fmt.Printf("下游节点配置: %v\n", downstreamNodeConfigs)
 	return downstreamNodeConfigs
 }
 

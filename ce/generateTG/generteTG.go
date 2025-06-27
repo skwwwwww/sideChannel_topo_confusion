@@ -9,9 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
-	// criticalpath "github.com/sideChannel_topo_confusion/ce/criticalpath"
 	generateobfucationstrategy "github.com/sideChannel_topo_confusion/ce/generateobfucationstrategy"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,10 +27,10 @@ type EnvoyFilterConfig struct {
 	App       string
 }
 
-const (
-	maxRetries = 10              // 最大重试次数
-	retryDelay = 3 * time.Second // 基础重试间隔
-)
+// const (
+// 	maxRetries = 10              // 最大重试次数
+// 	retryDelay = 3 * time.Second // 基础重试间隔
+// )
 
 var gvr = schema.GroupVersionResource{
 	Group:    "networking.istio.io",
@@ -86,6 +84,42 @@ func CreateOA(namespace string, instanceID string) *corev1.Service {
 	return createService
 }
 
+// DeleteOA 删除由 CreateOA 创建的 OA 相关的 Deployment 和 Service
+// namespace: Deployment 所在的命名空间
+// instanceID: OA 的实例 ID，用于构建 Deployment 和 Service 的名称
+func DeleteOA(namespace string, instanceID string) error {
+	deploymentName := fmt.Sprintf("traffic-service-%s", instanceID)
+	serviceName := fmt.Sprintf("traffic-service-%s", instanceID) // Service 名称与 Deployment 名称相同
+
+	var deletionErrors []error // 用于收集所有删除操作中的错误
+
+	// 1. 删除 Deployment
+	fmt.Printf("尝试删除 Deployment: %s/%s...\n", namespace, deploymentName)
+	err := Clientset.AppsV1().Deployments(namespace).Delete(context.TODO(), deploymentName, metav1.DeleteOptions{})
+	if err != nil {
+		log.Printf("错误: 无法删除 Deployment() %s/%s: %v", namespace, deploymentName, err)
+	} else {
+		fmt.Printf("Deployment %s/%s 删除成功。\n", namespace, deploymentName)
+	}
+
+	// 2. 删除 Service
+	// 注意：根据您提供的 CreateOA 代码，Service 是在 "default" 命名空间创建的。
+	// 请确保这里使用的命名空间与创建时一致。
+	fmt.Printf("尝试删除 Service: %s/%s...\n", namespace, serviceName)
+	err = Clientset.CoreV1().Services(namespace).Delete(context.TODO(), serviceName, metav1.DeleteOptions{})
+	if err != nil {
+		log.Printf("错误: 无法删除 Service(也可能时不存在) %s/%s: %v", namespace, serviceName, err)
+	} else {
+		fmt.Printf("Service %s/%s 删除成功。\n", namespace, serviceName)
+	}
+
+	// 返回所有收集到的错误，如果没有任何错误则返回 nil
+	if len(deletionErrors) > 0 {
+		return fmt.Errorf("删除 OA (instanceID: %s) 时发生以下错误: %v", instanceID, deletionErrors)
+	}
+	return nil
+}
+
 // 这里创建EnvoyFilter
 func CreateEnvoyFilter(namespace string, instanceName string) {
 	envoyConfig := EnvoyFilterConfig{}
@@ -96,7 +130,7 @@ func CreateEnvoyFilter(namespace string, instanceName string) {
 	// 创建 EnvoyFilter
 	_, err := Client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Errorf("无法创建 EnvoyFilter: %v", err)
+		log.Fatalf("无法创建 EnvoyFilter: %v", err)
 	}
 
 	fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
@@ -109,7 +143,7 @@ func CreateRootEnvoyFilter(config EnvoyFilterConfig, instanceName string) {
 	// 创建 EnvoyFilter
 	_, err := Client.Resource(gvr).Namespace(config.Namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Errorf("无法创建 EnvoyFilter: %v", err)
+		log.Fatalf("无法创建 EnvoyFilter: %v", err)
 	}
 
 	fmt.Printf("成功创建 EnvoyFilter: %s/%s envoyfilter\n", config.Namespace, config.App)
