@@ -1,0 +1,83 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  creationTimestamp: "2025-06-30T19:06:55Z"
+  generation: 1
+  name: filter-confusion-header-root
+  namespace: default
+  resourceVersion: "1179088"
+  uid: d6c496ca-dbc2-490b-ad51-485f20264319
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_OUTBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.router
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.lua
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          inlineCode: |2
+
+            function generate_span_id()
+                local file = io.open("/dev/urandom", "rb")
+                if not file then return nil end
+                local bytes = file:read(8)
+                file:close()
+                return string.format("%%02x%%02x%%02x%%02x%%02x%%02x%%02x%%02x",
+                    string.byte(bytes, 1), string.byte(bytes, 2), string.byte(bytes, 3), string.byte(bytes, 4),
+                    string.byte(bytes, 5), string.byte(bytes, 6), string.byte(bytes, 7), string.byte(bytes, 8))
+            end
+
+            function envoy_on_request(request_handle)
+                local original_headers = request_handle:headers()
+                local headers_to_send = {
+                    [":method"] = "GET",
+                    [":path"] = "/api",
+                    [":authority"] = "traffic-service-0.default.svc.cluster.local",
+                    [":scheme"] = "http",
+                    ["X-Traffic-Type"] = "confusion",
+                    ["Content-Length"] = "0"
+                }
+                local request_id = original_headers:get("x-request-id")
+                if request_id then
+                    headers_to_send["x-request-id"] = request_id
+                end
+                local trace_id = original_headers:get("x-b3-traceid")
+                if trace_id then
+                    headers_to_send["x-b3-traceid"] = trace_id
+                    local parent_span_id = original_headers:get("x-b3-spanid")
+                    if parent_span_id then
+                        headers_to_send["x-b3-parentspanid"] = parent_span_id
+                    end
+                    headers_to_send["x-b3-spanid"] = generate_span_id()
+                    local sampled = original_headers:get("x-b3-sampled")
+                    if sampled then
+                        headers_to_send["x-b3-sampled"] = sampled
+                    end
+                end
+                local istio_attributes = original_headers:get("x-istio-attributes")
+                if istio_attributes then
+                    headers_to_send["x-istio-attributes"] = istio_attributes
+                end
+                local cluster_name = "outbound|80||traffic-service-0.default.svc.cluster.local"
+                local ok, err = request_handle:httpCall(
+                    cluster_name,
+                    headers_to_send,
+                    nil, -- request body
+                    5000 -- timeout
+                )
+                if not ok then
+                    request_handle:logWarn("生成请求失败: " .. tostring(err))
+                end
+            end
+  workloadSelector:
+    labels:
+      app: productpage

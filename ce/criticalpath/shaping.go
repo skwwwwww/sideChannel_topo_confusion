@@ -2,6 +2,7 @@ package criticalpath
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 
@@ -100,7 +101,7 @@ func shaped1(root topo.Root) (trafficMap [][]TrafficEdge, nodes []string, nodesM
 		source := v.Data.Source
 		numTraget := nodesMap[target].num
 		numSource := nodesMap[source].num
-		fmt.Println("target: %s, source: %s, numTraget: %d, numSource: %d", target, source, numTraget, numSource)
+		log.Printf("target: %s, source: %s, numTraget: %d, numSource: %d", target, source, numTraget, numSource)
 
 		trafficMap[numSource][numTraget].isConnected = true
 		// 服务依赖性 -> 边的权值为 "1"

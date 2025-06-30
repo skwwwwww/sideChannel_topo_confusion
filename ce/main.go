@@ -4,7 +4,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 
 	"net/http"
 
@@ -18,10 +18,12 @@ func main() {
 	http.HandleFunc("/healthz", healthz)
 	http.HandleFunc("/ready", ready)
 
-	fmt.Println("Server started at :8080")
-	http.ListenAndServe(":8080", nil)
-	for {
+	log.Println("Server started at :8080")
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatalf("Error starting server: %v", err)
 	}
+	log.Println("Server stopped")
 }
 
 // HealthStatus represents the health status of the application.

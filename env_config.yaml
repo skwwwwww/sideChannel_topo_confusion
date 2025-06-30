@@ -1,0 +1,18 @@
+[?1049h[22;0;0t[>4;2m[?1h=[?2004h[?1004h[1;55r[?12h[?12l[22;2t[22;1t[27m[23m[29m[m[H[2J[?25l[55;1H"/tmp/kubectl-edit-324350775.yaml" 87L, 3614B[1;1H# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  creationTimestamp: "2025-06-30T17:41:24Z"
+  generation: 1
+  name: filter-confusion-header-root
+  namespace: default
+  resourceVersion: "1165226"
+  uid: 2db475a9-d668-4860-a20d-c482aac9ebdc
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:[18;7Hcontext: SIDECAR_OUTBOUND[19;7Hlistener:[20;9HfilterChain:[21;11Hfilter:[22;13Hname: envoy.filters.network.http_connection_manager[23;13HsubFilter:[24;15Hname: envoy.filters.http.router
+    patch:[26;7Hoperation: INSERT_BEFORE[27;7Hvalue:[28;9Hname: envoy.filters.http.lua[29;9Htyped_config:[30;11H'@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua[31;11HinlineCode: |2[33;13Hfunction generate_span_id()[34;17Hlocal file = io.open("/dev/urandom", "rb")[35;17Hif not file then return nil end[36;17Hlocal bytes = file:read(8)[37;17Hfile:close()[38;17Hreturn string.format("%%02x%%02x%%02x%%02x%%02x%%02x%%02x%%02x",[39;21Hstring.byte(bytes, 1), string.byte(bytes, 2), string.byte(bytes, 3), string.byte(bytes, 4),[40;21Hstring.byte(bytes, 5), string.byte(bytes, 6), string.byte(bytes, 7), string.byte(bytes, 8))[41;13Hend[43;13Hfunction envoy_on_request(request_handle)[44;17Hlocal original_headers = request_handle:headers()[45;17Hlocal headers_to_send = {[46;21H[":method"] = "GET",[47;21H[":path"] = "/api",[48;21H[":authority"] = "traffic-service-0.default.svc.cluster.local",[49;21H[":scheme"] = "http",[50;21H["X-Traffic-Type"] = "confusion",[51;21H["Content-Length"] = "0"[52;17H}[53;17Hlocal request_id = original_headers:get("x-request-id")[54;17Hif request_id then[55;253H1,1[11CTop[1;1H[?25h[?4m[55;1H[?2004l[>4;m[23;2t[23;1t[55;1H[K[55;1H[?1004l[?2004l[?1l>[?1049l[23;0;0t[>4;m
