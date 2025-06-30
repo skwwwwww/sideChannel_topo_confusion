@@ -13,7 +13,7 @@ import (
 
 func main() {
 
-	execobfuscationstrategy.Execobfuscationstrategy()
+	go execobfuscationstrategy.Execobfuscationstrategy()
 
 	http.HandleFunc("/healthz", healthz)
 	http.HandleFunc("/ready", ready)

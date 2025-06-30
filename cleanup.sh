@@ -19,6 +19,8 @@ kubectl delete envoyfilter \
     filter-confusion-headertraffic-service-1 \
     filter-confusion-headertraffic-service-2 \
     filter-confusion-header-root \
+    filter-confusion-headerratings \
+    filter-confusion-headerreviews \
     --ignore-not-found=true
 
 echo "Cleanup commands executed."

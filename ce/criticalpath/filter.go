@@ -13,7 +13,7 @@ func ServiceFilter(t topo.Root) topo.Root {
 	toRemoveEdge := []int{}
 
 	for i, v := range t.Elements.Nodes {
-		if strings.HasPrefix(v.Data.Service, "traffic-generator") || strings.HasPrefix(v.Data.Workload, "traffic-generator") {
+		if strings.HasPrefix(v.Data.Service, "traffic-service") || strings.HasPrefix(v.Data.Workload, "traffic-service") {
 			nodeMap[v.Data.Service] = true
 			toRemoveNode = append(toRemoveNode, i)
 			//t.Elements.Nodes = append(t.Elements.Nodes[:i], t.Elements.Nodes[i+1:]...)
