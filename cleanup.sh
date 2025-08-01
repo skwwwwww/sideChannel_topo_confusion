@@ -13,8 +13,8 @@ kubectl delete svc traffic-service-0 traffic-service-1 traffic-service-2 --ignor
 
 echo "Deleting EnvoyFilters..."
 kubectl delete envoyfilter \
-    filter-confusion-headerratings \
-    filter-confusion-headerreviews \
+    filter-confusion-headercarts \
+    filter-confusion-headerorders \
     filter-confusion-headertraffic-service-0 \
     filter-confusion-headertraffic-service-1 \
     filter-confusion-headertraffic-service-2 \
