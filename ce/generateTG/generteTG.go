@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type EnvoyFilterConfig struct {
@@ -123,18 +124,27 @@ func DeleteOA(namespace string, instanceID string) error {
 // 这里创建EnvoyFilter
 func CreateEnvoyFilter(namespace string, instanceName string) {
 	envoyConfig := EnvoyFilterConfig{}
-	// envoyConfig.App = "traffic-service-" + instanceID
 	envoyConfig.App = instanceName
 	envoyConfig.Namespace = namespace
-	envoyFilter := configEnvoyFilter(envoyConfig, envoyConfig.App)
-	// 创建 EnvoyFilter
-	_, err := Client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
+
+	envoyFilterName := "filter-confusion-header" + instanceName
+	envoyFilterToCreate := configEnvoyFilter(envoyConfig, instanceName) // 先生成要创建的对象
+
+	// 尝试创建 EnvoyFilter
+	_, err := Client.Resource(gvr).Namespace(namespace).Create(context.TODO(), envoyFilterToCreate, metav1.CreateOptions{})
 	if err != nil {
-		log.Fatalf("无法创建 EnvoyFilter: %v", err)
+		if apierrors.IsAlreadyExists(err) {
+			// 如果错误是“资源已存在”，则认为是正常情况，打印提示信息
+			fmt.Printf("EnvoyFilter %s/%s 已存在，无需创建。\n", namespace, envoyFilterName)
+		} else {
+			// 对于其他创建失败的错误，记录下来并处理
+			log.Printf("无法创建 EnvoyFilter %s/%s: %v\n", namespace, envoyFilterName, err)
+			// 根据你的应用逻辑，可以选择重试、返回错误或记录错误但不退出
+		}
+		return // 无论如何，处理完错误后都返回
 	}
 
-	fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyConfig.App)
-
+	fmt.Printf("成功创建 EnvoyFilter: %s/%s\n", namespace, envoyFilterName)
 }
 
 func CreateRootEnvoyFilter(config EnvoyFilterConfig, instanceName string) {
@@ -499,7 +509,7 @@ func SetDownstreamNode(downstreamNodeConfigs []generateobfucationstrategy.Downst
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Fatalf("发送 HTTP 请求失败: %v", err)
+		log.Fatalf("发送 HTTP 请求失败: %v, 响应体为：", err)
 	}
 	defer resp.Body.Close()
 
@@ -514,32 +524,32 @@ func SetDownstreamNode(downstreamNodeConfigs []generateobfucationstrategy.Downst
 	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
 	fmt.Printf("响应内容: %s\n", string(body))
 
-	url := "http://" + service + "/start-traffic"
-	req1, err1 := http.NewRequest("POST", url, nil)
-	if err1 != nil {
-		log.Fatalf("无法创建 HTTP 请求: %v", err)
-	}
+	// url := "http://" + service + "/start-traffic"
+	// req1, err1 := http.NewRequest("POST", url, nil)
+	// if err1 != nil {
+	// 	log.Fatalf("无法创建 HTTP 请求: %v", err)
+	// }
 
-	// 记录请求头
-	log.Printf("请求头: %+v", req1.Header)
-	log.Printf("Url: %+v", req1.URL)
+	// // 记录请求头
+	// log.Printf("请求头: %+v", req1.Header)
+	// log.Printf("Url: %+v", req1.URL)
 
-	//client1 := &http.Client{}
-	resp, err = client.Do(req1)
-	if err != nil {
-		log.Fatalf("发送 HTTP 请求失败: %v", err)
-	}
-	defer resp.Body.Close()
+	// //client1 := &http.Client{}
+	// resp, err = client.Do(req1)
+	// if err != nil {
+	// 	log.Fatalf("发送 HTTP 请求失败: %v", err)
+	// }
+	// defer resp.Body.Close()
 
-	// 4. 读取响应
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("读取响应失败: %v", err)
-	}
+	// // 4. 读取响应
+	// body, err = io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	log.Fatalf("读取响应失败: %v", err)
+	// }
 
-	// 5. 输出响应
-	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
-	fmt.Printf("响应内容: %s\n", string(body))
+	// // 5. 输出响应
+	// fmt.Printf("响应状态码: %d\n", resp.StatusCode)
+	// fmt.Printf("响应内容: %s\n", string(body))
 
 }
 func getNextNLayers(hostAndPorts [][]string, N int) []string {

@@ -1,6 +1,7 @@
 package criticalpath
 
 import (
+	"encoding/json"
 	"log"
 
 	topo "github.com/sideChannel_topo_confusion/ce/topo"
@@ -15,10 +16,13 @@ type PathInfo struct {
 func GetCriticalPaths() (float64, []string, map[string]TrafficNode, []CriticalPathNodeMetric) {
 	// 1. 获取原始拓扑
 	root := topo.GetTopo()
-	log.Println("获取到的原始拓扑:", root)
+	jsonData, _ := json.Marshal(root)
+	log.Println("获取到的原始拓扑:", string(jsonData))
 
-	root = ServiceFilter(root)
-	log.Println("过滤后的拓扑:", root)
+	root = FilterTopoByServiceAndTrafficServiceNames(root)
+
+	jsonData, _ = json.Marshal(root)
+	log.Println("过滤后的拓扑:", string(jsonData))
 
 	trafficMap, nodes, nodesMap, rootNodes := shaped1(root)
 	log.Println("获取到的流量映射:", trafficMap)

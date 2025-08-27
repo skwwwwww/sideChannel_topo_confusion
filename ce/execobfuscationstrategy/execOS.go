@@ -32,16 +32,19 @@ var (
 )
 
 func Execobfuscationstrategy() {
+	log.Println("这里初始化kubectl客户端,为之后创建OA和EnvoyFilter做准备")
 	generaltg.InitClient()
+	log.Println("初始化kubectl客户端成功")
+
 	// 首次运行，强制部署混淆策略
-	fmt.Println("首次部署混淆策略...")
+	log.Println("首次部署混淆策略...")
 	reapplyStrategy(true) // force = true
 
 	// 进入无限循环，周期性地重新评估和应用策略
 	for {
-		fmt.Printf("等待 %s 后重新评估策略...\n", recheckInterval)
+		log.Printf("等待 %s 后重新评估策略...\n", recheckInterval)
 		time.Sleep(recheckInterval) // 等待指定时间
-		fmt.Println("正在重新评估混淆策略...")
+		log.Println("正在重新评估混淆策略...")
 		reapplyStrategy(false) // force = false，进行变化检查
 	}
 
@@ -91,7 +94,6 @@ func Execobfuscationstrategy() {
 
 func reapplyStrategy(force bool) {
 	// 1. 获取最新的拓扑和关键路径信息
-	// oaConfig, envoyFilterConfig, downstreamNodeConfig := generateobfucationstrategy.Generateconfucationstrategy()
 	_, newPath, newNodesMap, newCriticalPathMetrics := criticalpath.GetCriticalPaths()
 
 	// 2. 根据最新的关键路径信息生成新的混淆策略配置
@@ -141,11 +143,11 @@ func reapplyStrategy(force bool) {
 
 		if !exists || currentOANamespace != newOACfg.Namespace {
 			// 如果OA不存在，或者其命名空间发生变化（不常见，但以防万一），则创建
-			fmt.Printf("创建或确保OA %s 在命名空间 %s 中存在...\n", instanceID, newOACfg.Namespace)
+			log.Printf("创建或确保OA %s 在命名空间 %s 中存在...\n", instanceID, newOACfg.Namespace)
 			generaltg.CreateOA(newOACfg.Namespace, instanceID)
 			activeDeployedOAs[instanceID] = newOACfg.Namespace // 标记为已部署
 		} else {
-			fmt.Printf("复用现有OA %s 在命名空间 %s 中。\n", instanceID, newOACfg.Namespace)
+			log.Printf("复用现有OA %s 在命名空间 %s 中。\n", instanceID, newOACfg.Namespace)
 		}
 		desiredActiveOAs[instanceID] = struct{}{} // 标记为本次期望活跃的OA
 
@@ -155,11 +157,11 @@ func reapplyStrategy(force bool) {
 		if i < len(newDownstreamNodeConfig) && len(newDownstreamNodeConfig[i]) > 0 {
 			// 根据OA的InstanceID和Namespace构建其DNS名称，作为SetDownstreamNode的源头参数
 			oaSourceDNS := fmt.Sprintf("%s.%s.svc.cluster.local", "traffic-service-"+instanceID, newOACfg.Namespace)
-			fmt.Printf("为OA %s (%s) 设置下游节点...\n", instanceID, oaSourceDNS)
+			log.Printf("为OA %s (%s) 设置下游节点...\n", instanceID, oaSourceDNS)
 			// generaltg.SetDownstreamNode 期望接收一个 DownstreamNodeConfig 切片
 			generaltg.SetDownstreamNode(newDownstreamNodeConfig[i], oaSourceDNS)
 		} else {
-			fmt.Printf("未为OA %s 配置下游节点。跳过设置。\n", instanceID)
+			log.Printf("未为OA %s 配置下游节点。跳过设置。\n", instanceID)
 		}
 
 		// 在设置下游节点后，对新创建/更新的OA进行健康检查
@@ -168,7 +170,7 @@ func reapplyStrategy(force bool) {
 		for {
 			err := checkService(serviceURL)
 			if err == nil {
-				fmt.Printf("服务 %s 健康检查通过。\n", serviceURL)
+				log.Printf("服务 %s 健康检查通过。\n", serviceURL)
 				break
 			}
 			if numRetries >= maxRetries {
@@ -176,7 +178,7 @@ func reapplyStrategy(force bool) {
 				break // 超过最大重试次数，退出重试循环
 			}
 			delay := retryDelay * time.Duration(numRetries+1) // 线性退避
-			fmt.Printf("服务 %s 不健康。将在 %s 后重试 (尝试 %d/%d)。\n", serviceURL, delay, numRetries+1, maxRetries)
+			log.Printf("服务 %s 不健康。将在 %s 后重试 (尝试 %d/%d)。\n", serviceURL, delay, numRetries+1, maxRetries)
 			time.Sleep(delay)
 			numRetries++
 		}
@@ -184,7 +186,7 @@ func reapplyStrategy(force bool) {
 	// 清理不再是关键路径一部分的旧OA
 	for instanceID, ns := range activeDeployedOAs {
 		if _, exists := desiredActiveOAs[instanceID]; !exists {
-			fmt.Printf("删除不再使用的OA %s 在命名空间 %s 中...\n", instanceID, ns)
+			log.Printf("删除不再使用的OA %s 在命名空间 %s 中...\n", instanceID, ns)
 			generaltg.DeleteOA(ns, instanceID)    // 假设 generaltg.DeleteOA 函数存在
 			delete(activeDeployedOAs, instanceID) // 从活跃列表中移除
 		}
@@ -194,7 +196,7 @@ func reapplyStrategy(force bool) {
 	// 这里直接基于新的配置进行创建/更新操作。
 	// 遍历新的 EnvoyFilter 配置（除根 EnvoyFilter 外）
 	for i := 0; i < len(newEnvoyFilterConfig)-1; i++ {
-		fmt.Printf("创建/更新 EnvoyFilter %s 在命名空间 %s 中...\n", newEnvoyFilterConfig[i].InstanceName, newEnvoyFilterConfig[i].Namespace)
+		log.Printf("创建/更新 EnvoyFilter %s 在命名空间 %s 中...\n", newEnvoyFilterConfig[i].InstanceName, newEnvoyFilterConfig[i].Namespace)
 		generaltg.CreateEnvoyFilter(newEnvoyFilterConfig[i].Namespace, newEnvoyFilterConfig[i].InstanceName)
 	}
 
@@ -207,10 +209,10 @@ func reapplyStrategy(force bool) {
 		}
 		// 根 EnvoyFilter 指向第一个OA
 		rootTargetService := fmt.Sprintf("%s.%s.svc.cluster.local", "traffic-service-"+newOAConfig[0].InstanceID, newOAConfig[0].Namespace)
-		fmt.Printf("创建/更新根 EnvoyFilter (App: %s, Namespace: %s) 指向 %s...\n", rootConfig.App, rootConfig.Namespace, rootTargetService)
+		log.Printf("创建/更新根 EnvoyFilter (App: %s, Namespace: %s) 指向 %s...\n", rootConfig.App, rootConfig.Namespace, rootTargetService)
 		generaltg.CreateRootEnvoyFilter(rootConfig, rootTargetService)
 	} else {
-		fmt.Println("跳过根 EnvoyFilter 创建：配置不足。")
+		log.Println("跳过根 EnvoyFilter 创建：配置不足。")
 	}
 
 	// --- 更新全局状态，为下一次循环做准备 ---
@@ -220,7 +222,7 @@ func reapplyStrategy(force bool) {
 	// currentOAConfigs 只是存储生成的配置，activeDeployedOAs 才是实际部署的OA状态
 	// currentOAConfigs = newOAConfig // 这一行在实际决策中不直接使用，activeDeployedOAs 更重要
 
-	fmt.Println("混淆策略重新应用完成。")
+	log.Println("混淆策略重新应用完成。")
 }
 
 // arePathsSame 检查两条关键路径是否完全相同（长度和内容）
@@ -270,12 +272,14 @@ func areMetricsSignificantlyDifferent(metrics1, metrics2 []criticalpath.Critical
 // checkService 用来判断创建的OA是否已经可用了（如果不进行判断，直接设置downstreamNode会报错）
 func checkService(serviceURL string) error {
 	resp, err := http.Get(serviceURL)
-	fmt.Println(resp)
+	log.Println(resp)
 	if resp == nil {
-		return fmt.Errorf("响应为空")
+		log.Fatalf("响应为空")
+		return err
 	}
 	if err != nil || resp.StatusCode != 200 {
-		return fmt.Errorf("服务不可用，状态码: %d", resp.StatusCode)
+		log.Fatalf("服务不可用，状态码: %d", resp.StatusCode)
+		return err
 	}
 	return nil
 }
