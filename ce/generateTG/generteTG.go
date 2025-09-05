@@ -13,6 +13,7 @@ import (
 	generateobfucationstrategy "github.com/sideChannel_topo_confusion/ce/generateobfucationstrategy"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -20,7 +21,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type EnvoyFilterConfig struct {
@@ -158,6 +158,52 @@ func CreateRootEnvoyFilter(config EnvoyFilterConfig, instanceName string) {
 
 	fmt.Printf("成功创建 EnvoyFilter: %s/%s envoyfilter\n", config.Namespace, config.App)
 
+}
+
+// DeleteEnvoyFilter 根据命名空间和实例名称删除 EnvoyFilter
+func DeleteEnvoyFilter(namespace string, instanceName string) {
+	envoyFilterName := "filter-confusion-header" + instanceName
+
+	// 尝试删除 EnvoyFilter
+	err := Client.Resource(gvr).Namespace(namespace).Delete(context.TODO(), envoyFilterName, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// 如果错误是“资源未找到”，则认为是正常情况，打印提示信息
+			fmt.Printf("EnvoyFilter %s/%s 不存在，无需删除。\n", namespace, envoyFilterName)
+		} else {
+			// 对于其他删除失败的错误，记录下来并处理
+			log.Printf("无法删除 EnvoyFilter %s/%s: %v\n", namespace, envoyFilterName, err)
+			// 根据你的应用逻辑，可以选择重试、返回错误或记录错误但不退出
+		}
+		return // 无论如何，处理完错误后都返回
+	}
+
+	fmt.Printf("成功删除 EnvoyFilter: %s/%s\n", namespace, envoyFilterName)
+}
+
+// DeleteRootEnvoyFilter 根据配置信息删除 Root EnvoyFilter
+// 注意：这里假设 config.App 包含了用于唯一标识 Root EnvoyFilter 的名称
+// 如果 configRootEnvoyFilter 生成的名称有其他逻辑，需要相应调整
+func DeleteRootEnvoyFilter(config EnvoyFilterConfig, instanceName string) {
+	// 根据 configRootEnvoyFilter 的逻辑，确定 EnvoyFilter 的名称
+	// 这里我假设它的名称仍然是基于 config.App 和 instanceName (如果 instanceName 也参与命名)
+	// 如果 configRootEnvoyFilter 生成的名称逻辑不同，请修改这里。
+	// 示例：如果 configRootEnvoyFilter 内部也使用了 "filter-confusion-header" + instanceName
+	// 或者就是 config.App 作为名称，你需要根据实际情况调整。
+	// 这里我假设 config.App 就是它的名称或者可以从 config 和 instanceName 推导出来
+	rootEnvoyFilterName := config.App // 假设 config.App 是 Root EnvoyFilter 的名称
+
+	// 尝试删除 EnvoyFilter
+	err := Client.Resource(gvr).Namespace(config.Namespace).Delete(context.TODO(), rootEnvoyFilterName, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			fmt.Printf("EnvoyFilter %s/%s 不存在，无需删除。\n", config.Namespace, rootEnvoyFilterName)
+		} else {
+			log.Fatalf("无法删除 EnvoyFilter %s/%s: %v", config.Namespace, rootEnvoyFilterName, err)
+		}
+	}
+
+	fmt.Printf("成功删除 EnvoyFilter: %s/%s\n", config.Namespace, rootEnvoyFilterName)
 }
 
 // 这里我觉的还需要解耦以下，他的责任只是创建OA
