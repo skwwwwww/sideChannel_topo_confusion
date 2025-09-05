@@ -147,7 +147,7 @@ func TrafficControl(ctx context.Context, node DownstreamNodeConfig) {
 			isConfusion := false // 默认不是混淆流量
 			// 根据 ErrorRate 决定是否发送混淆流量
 			// ErrorRate 假定为百分比，例如 5 代表 5%
-			if randSource.Float64()*100 < node.ErrorRate {
+			if randSource.Float64()*100 > node.ErrorRate {
 				isConfusion = true
 			}
 			sendTraffic(client, isConfusion, node.DNS)
