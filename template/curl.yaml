@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-pod
+spec:
+  containers:
+  - name: curl-container
+    image: curlimages/curl:latest  # 使用官方的 curl 镜像
+    command: ["tail", "-f", "/dev/null"] # 你要执行的 curl 命令
+  restartPolicy: Never  # 确保命令完成后不重启 Pod
+

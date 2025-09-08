@@ -1,0 +1,68 @@
+curl -X POST http://test-agent-1.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-2.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-3.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-4.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-5.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-6.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-7.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-8.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'
+
+curl -X POST http://test-agent-8.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-9.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-10.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-11.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-12.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-13.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-14.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-15.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'
+
+curl -X POST http://test-agent-15.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-16.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-17.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-18.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-19.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-20.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-21.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-22.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'
+
+curl -X POST http://test-agent-22.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-23.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-24.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-25.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-26.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-27.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-28.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-29.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'
+curl -X POST http://test-agent-29.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-30.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-31.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-32.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-33.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-34.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-35.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-36.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'
+
+curl -X POST http://test-agent-36.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-37.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-38.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-39.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-40.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-41.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-42.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-43.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'
+
+curl -X POST http://test-agent-43.default.svc.cluster.local/set-nodes -d '[
+     {"DNS": "test-agent-44.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-45.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-46.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-47.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-48.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-49.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0},
+     {"DNS": "test-agent-50.default.svc.cluster.local:80/api", "ServiceNum": 1, "Rps": 0.465, "ErrorRate": 0}
+]'

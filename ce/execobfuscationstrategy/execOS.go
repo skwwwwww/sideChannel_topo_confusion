@@ -39,17 +39,27 @@ func Execobfuscationstrategy() {
 	log.Println("这里初始化kubectl客户端,为之后创建OA和EnvoyFilter做准备")
 	generaltg.InitClient()
 	log.Println("初始化kubectl客户端成功")
-
+	// 记录初次混淆开始时间
+	startTime := time.Now()
 	// 首次运行，强制部署混淆策略
 	log.Println("首次部署混淆策略...")
 	reapplyStrategy(true) // force = true
 
+	// 记录初次混淆结束时间
+	endTime := time.Now()
+	duration := endTime.Sub(startTime)
+	log.Printf("初次混淆部署完成，持续时间: %v\n", duration)
 	// 进入无限循环，周期性地重新评估和应用策略
 	for {
 		log.Printf("等待 %s 后重新评估策略...\n", recheckInterval)
 		time.Sleep(recheckInterval) // 等待指定时间
 		log.Println("正在重新评估混淆策略...")
+		// 记录发现差异到混淆更新生效的时间
+		diffStartTime := time.Now()
 		reapplyStrategy(false) // force = false，进行变化检查
+		diffEndTime := time.Now()
+		diffDuration := diffEndTime.Sub(diffStartTime)
+		log.Printf("从发现差异到混淆更新生效的时间: %v\n", diffDuration)
 	}
 }
 

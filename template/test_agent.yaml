@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: traffic-service-2  # 需替换{{instanceID}}为实际值
+  name: test-agent-<instanceID>
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: traffic-service-2  # 必须与template.labels匹配
+      app: test-agent-<instanceID>
   template:
     metadata:
       labels:
-        app: traffic-service-2  # 标签选择器依据
+        app: test-agent-<instanceID>
     spec:
       containers:
-        - name: traffic-generator
-          image: traffic-generator:1.0
+        - name: test-agent
+          image: obfuscation_agent:v3
           env:
             - name: PORT
               value: "8080"
