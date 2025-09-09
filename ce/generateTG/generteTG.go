@@ -153,10 +153,10 @@ func CreateRootEnvoyFilter(config EnvoyFilterConfig, instanceName string) {
 	// 创建 EnvoyFilter
 	_, err := Client.Resource(gvr).Namespace(config.Namespace).Create(context.TODO(), envoyFilter, metav1.CreateOptions{})
 	if err != nil {
-		log.Fatalf("无法创建 EnvoyFilter: %v", err)
+		log.Printf("无法创建 EnvoyFilter: %v\n", err)
 	}
 
-	fmt.Printf("成功创建 EnvoyFilter: %s/%s envoyfilter\n", config.Namespace, config.App)
+	log.Printf("成功创建 EnvoyFilter: %s/%s envoyfilter\n", config.Namespace, config.App)
 
 }
 
@@ -555,7 +555,7 @@ func SetDownstreamNode(downstreamNodeConfigs []generateobfucationstrategy.Downst
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Fatalf("发送 HTTP 请求失败: %v, 响应体为：", err)
+		log.Print("发送 HTTP 请求失败: %v, 响应体为：", err)
 	}
 	defer resp.Body.Close()
 
@@ -567,9 +567,26 @@ func SetDownstreamNode(downstreamNodeConfigs []generateobfucationstrategy.Downst
 	}
 
 	// 输出响应
-	fmt.Printf("响应状态码: %d\n", resp.StatusCode)
-	fmt.Printf("响应内容: %s\n", string(body))
+	log.Printf("响应状态码: %d\n", resp.StatusCode)
+	log.Printf("响应内容: %s\n", string(body))
+	for resp.StatusCode != 200 {
+		resp, err = client.Do(req)
 
+		if err != nil {
+			log.Printf("发送 HTTP 请求失败: %v, 响应体为：", err)
+		}
+
+		// 读取响应
+		body, err = io.ReadAll(resp.Body)
+
+		if err != nil {
+			log.Fatalf("读取响应失败: %v", err)
+		}
+
+		// 输出响应
+		log.Printf("响应状态码: %d\n", resp.StatusCode)
+		log.Printf("响应内容: %s\n", string(body))
+	}
 	// url := "http://" + service + "/start-traffic"
 	// req1, err1 := http.NewRequest("POST", url, nil)
 	// if err1 != nil {

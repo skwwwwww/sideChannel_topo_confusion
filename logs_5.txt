@@ -1,0 +1,1381 @@
+2025/09/08 13:03:59 这里CE的开始,即将进入拓扑混淆执行
+2025/09/08 13:03:59 Server started at :8080
+2025/09/08 13:03:59 这里初始化kubectl客户端,为之后创建OA和EnvoyFilter做准备
+2025/09/08 13:03:59 初始化kubectl客户端成功
+2025/09/08 13:03:59 首次部署混淆策略...
+2025/09/08 13:03:59 获取到的拓扑数据: &{200 OK 200 HTTP/1.1 1 1 map[Content-Type:[application/json] Date:[Mon, 08 Sep 2025 13:03:59 GMT] Server:[envoy] Vary:[Accept-Encoding] X-Envoy-Upstream-Service-Time:[15]] 0xc0004b3780 -1 [chunked] false true map[] 0xc000526000 <nil>}
+2025/09/08 13:03:59 获取到的原始拓扑: {
+  "timestamp": 1757336639,
+  "duration": 60,
+  "graphType": "service",
+  "elements": {
+    "nodes": [
+      {
+        "data": {
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "2f7a15a1cc1004a724c95b97d4901fa2588ef0125301b29802f9a9b96890ec84",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "kubernetes",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.044
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.044
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "traffic-service-0"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.04",
+                "httpOut": "0.55"
+              }
+            }
+          ],
+          "service": "traffic-service-0",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.192
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.192
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "traffic-service-1"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.19",
+                "httpOut": "0.30"
+              }
+            }
+          ],
+          "service": "traffic-service-1",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.31899999999999995
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.31899999999999995
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "traffic-service-2"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.32"
+              }
+            }
+          ],
+          "service": "traffic-service-2",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "ce",
+{true 1 0.47 0}
+          "cluster": "Kubernetes",
+{true 1 0.47 0}
+{true 1 0.47 0}
+{true 1 0.47 0}
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+[[{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {true 1 0.47 0} {true 1 0.47 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {true 1 0.47 0} {true 1 0.47 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}]]
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.141
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a",
+          "namespace": "default",
+          "nodeType": "workload",
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpOut": "0.14"
+              }
+            }
+          ],
+          "version": "latest",
+          "workload": "ce",
+          "isBox": "",
+          "isRoot": true
+        }
+      },
+      {
+        "data": {
+          "app": "details",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "ebe171afa07510750a97579cbb94399ceae7bf662fe7251e8160a810bfe81f22",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "details",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "productpage",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "349e29ffd91cfb91fb98b68d25428acd39dfd84717f10881c19e314760c8e97e",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "productpage",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "ratings",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "3689576da8a927f8dc174e787d75dff3c745e50e10fd9b00754f6987b89fdecc",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "ratings",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "reviews",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "bb714c573c3904df3dbb967f1b2b87ac3069f9134b965533b5ee7a9ec851a029",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "reviews",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-1",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "30f7d9f51acbc66ba633591e01cdb2ab082ce8bfde944696586fd99e1b6051e0",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "test-agent-1",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-1",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.934
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df",
+          "namespace": "default",
+          "nodeType": "workload",
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpOut": "0.93"
+              }
+            }
+          ],
+          "version": "latest",
+          "workload": "test-agent-1",
+          "isBox": "",
+          "isRoot": true
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-2",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-2"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.47"
+              }
+            }
+          ],
+          "service": "test-agent-2",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-3",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.5710000000000001
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.5710000000000001
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-3"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.57",
+                "httpOut": "0.93"
+              }
+            }
+          ],
+          "service": "test-agent-3",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-4",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.777
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.777
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-4"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.78"
+              }
+            }
+          ],
+          "service": "test-agent-4",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-5",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-5"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.47"
+              }
+            }
+          ],
+          "service": "test-agent-5",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "cluster": "unknown",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.022
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "f85faa4bfddc44e797b2231eb44aa75048c199a521124cd7851c29cbe8f91a70",
+          "namespace": "unknown",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "unknown",
+              "namespace": "unknown",
+              "name": "PassthroughCluster"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.02"
+              }
+            }
+          ],
+          "service": "PassthroughCluster",
+          "isBox": ""
+        }
+      }
+    ],
+    "edges": [
+      {
+        "data": {
+          "id": "c47396b9830aed73a856c0770fee4d8e8cbddd61519a93ef6d8b13dcbe65f517",
+          "source": "3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e",
+          "target": "6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.14",
+              "httpPercentReq": "48.2"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "732c82bfd58751f21e49782f5b201fb7f656ecd793efb773d5d55a5ee0768935",
+          "source": "3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e",
+          "target": "a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.15",
+              "httpPercentReq": "51.8"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "9c4c8552233cb4bc349f189c307451b01053379012784eaecc7c80f537ce6d91",
+          "source": "4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df",
+          "target": "628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "3629a19e428a5786dd3779bec7e54c9f6c800a36edfd80a054ee7c3a48f7c62e",
+          "source": "4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df",
+          "target": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "d4684b470131d2f8fde85db74d699072224e6c9e53a38799ad2922c021a49e1c",
+          "source": "7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a",
+          "target": "3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.04",
+              "httpPercentReq": "31.2"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "c969bdf31bdbd49053ac5ab782b919c84c35a9da15982e9f9b35de87cdab1ad6",
+          "source": "7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a",
+          "target": "6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.03",
+              "httpPercentReq": "22.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "de1d17e17eb0184bf3e3fa74ffd9c22c0b03343ea1696568e8c1b0553c8cb617",
+          "source": "7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a",
+          "target": "f85faa4bfddc44e797b2231eb44aa75048c199a521124cd7851c29cbe8f91a70",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.02",
+              "httpPercentReq": "15.6"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "c1bd6e0ecbbe09e0981770c0cf01843adacf04b872174c2d5ef6b55944892a9d",
+          "source": "7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a",
+          "target": "fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.04",
+              "httpPercentReq": "31.2"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "b9d79e7cb1b53b18f3af3cd0bb7aaae8169bce841b0491bab24db2435eb165e2",
+          "source": "fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965",
+          "target": "3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.15",
+              "httpPercentReq": "26.9"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "f28e6606788a9ec8e0df3ad9a2b461f32efcc2f31e498891df3da9769d5d402b",
+          "source": "fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965",
+          "target": "6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.14",
+              "httpPercentReq": "26.1"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "1186c81f7ac0f1c5546190b4c63a5b8dbac025beb7a11f97d37a8906c69c2149",
+          "source": "fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965",
+          "target": "a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.15",
+              "httpPercentReq": "28.1"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "05d9e96ab39f05572379cb20f8c0e7c026fe7a006ad7ed7f52b274bbfcea58d2",
+          "source": "fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965",
+          "target": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.10",
+              "httpPercentReq": "18.9"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "e401a7516ac93d92dba664ca99a145ea323caec6c8eb79f40824da3b3d5a9450",
+          "source": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "target": "a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "d83a671c2422370642570cefdbe4493e393bb2eef13f9e80ee3a5f24925deee0",
+          "source": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "target": "c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+2025/09/08 13:03:59 过滤掉节点 (原因: Service 字段以 'traffic-service' 开头): ID: fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965, Type: service, App: , Service: traffic-service-0, Workload: 
+2025/09/08 13:03:59 过滤掉节点 (原因: Service 字段以 'traffic-service' 开头): ID: 3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e, Type: service, App: , Service: traffic-service-1, Workload: 
+2025/09/08 13:03:59 过滤掉节点 (原因: Service 字段以 'traffic-service' 开头): ID: 6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9, Type: service, App: , Service: traffic-service-2, Workload: 
+2025/09/08 13:03:59 过滤掉节点 (原因: 包含黑名单关键字: 'ce'): ID: 7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a, Type: workload, App: ce, Service: , Workload: ce
+2025/09/08 13:03:59 过滤掉节点 (原因: 包含黑名单关键字: 'passthroughcluster'): ID: f85faa4bfddc44e797b2231eb44aa75048c199a521124cd7851c29cbe8f91a70, Type: service, App: , Service: PassthroughCluster, Workload: 
+2025/09/08 13:03:59 过滤后保留的节点数量: 11
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: c47396b9830aed73a856c0770fee4d8e8cbddd61519a93ef6d8b13dcbe65f517, Source: 3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e (不在保留列表), Target: 6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9 (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: 732c82bfd58751f21e49782f5b201fb7f656ecd793efb773d5d55a5ee0768935, Source: 3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e (不在保留列表), Target: a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9 (在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: d4684b470131d2f8fde85db74d699072224e6c9e53a38799ad2922c021a49e1c, Source: 7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a (不在保留列表), Target: 3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: c969bdf31bdbd49053ac5ab782b919c84c35a9da15982e9f9b35de87cdab1ad6, Source: 7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a (不在保留列表), Target: 6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9 (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: de1d17e17eb0184bf3e3fa74ffd9c22c0b03343ea1696568e8c1b0553c8cb617, Source: 7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a (不在保留列表), Target: f85faa4bfddc44e797b2231eb44aa75048c199a521124cd7851c29cbe8f91a70 (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: c1bd6e0ecbbe09e0981770c0cf01843adacf04b872174c2d5ef6b55944892a9d, Source: 7c18d86af0baf34b2dc438dcfbc589336c313638962e6b4b07ebfaedd0a63e3a (不在保留列表), Target: fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965 (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: b9d79e7cb1b53b18f3af3cd0bb7aaae8169bce841b0491bab24db2435eb165e2, Source: fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965 (不在保留列表), Target: 3fbfe2a3265e831782e7116483ee280df9b79bf3d236cbbed4511a19924acd1e (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: f28e6606788a9ec8e0df3ad9a2b461f32efcc2f31e498891df3da9769d5d402b, Source: fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965 (不在保留列表), Target: 6d82f3783b0b4ff8aa4a1153220d3fcefbd74c3ef683f5178a1e8e19531a87e9 (不在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: 1186c81f7ac0f1c5546190b4c63a5b8dbac025beb7a11f97d37a8906c69c2149, Source: fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965 (不在保留列表), Target: a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9 (在保留列表)
+2025/09/08 13:03:59 过滤掉边 (源或目标节点不在保留列表中): Edge ID: 05d9e96ab39f05572379cb20f8c0e7c026fe7a006ad7ed7f52b274bbfcea58d2, Source: fd239dfcdf8eb13a428034a3aa1cca3cc0747f2897fb1741e333f02ef7dac965 (不在保留列表), Target: ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638 (在保留列表)
+2025/09/08 13:03:59 过滤后保留的边数量: 4
+2025/09/08 13:03:59 过滤后的拓扑: {
+  "timestamp": 1757336639,
+  "duration": 60,
+  "graphType": "service",
+  "elements": {
+    "nodes": [
+      {
+        "data": {
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "2f7a15a1cc1004a724c95b97d4901fa2588ef0125301b29802f9a9b96890ec84",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "kubernetes",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "details",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "ebe171afa07510750a97579cbb94399ceae7bf662fe7251e8160a810bfe81f22",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "details",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "productpage",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "349e29ffd91cfb91fb98b68d25428acd39dfd84717f10881c19e314760c8e97e",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "productpage",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "ratings",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "3689576da8a927f8dc174e787d75dff3c745e50e10fd9b00754f6987b89fdecc",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "ratings",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "reviews",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "bb714c573c3904df3dbb967f1b2b87ac3069f9134b965533b5ee7a9ec851a029",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "reviews",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-1",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "30f7d9f51acbc66ba633591e01cdb2ab082ce8bfde944696586fd99e1b6051e0",
+          "namespace": "default",
+          "nodeType": "service",
+          "parent": "",
+          "service": "test-agent-1",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-1",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.934
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df",
+          "namespace": "default",
+          "nodeType": "workload",
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpOut": "0.93"
+              }
+            }
+          ],
+          "version": "latest",
+          "workload": "test-agent-1",
+          "isBox": "",
+          "isRoot": true
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-2",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-2"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.47"
+              }
+            }
+          ],
+          "service": "test-agent-2",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-3",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.5710000000000001
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.5710000000000001
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-3"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.57",
+                "httpOut": "0.93"
+              }
+            }
+          ],
+          "service": "test-agent-3",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-4",
+          "cluster": "Kubernetes",
+          "healthData": {
+[[{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {true 1 0.47 0} {true 1 0.47 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {true 1 0.47 0} {true 1 0.47 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}]]
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.777
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.777
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-4"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.78"
+              }
+            }
+          ],
+          "service": "test-agent-4",
+          "isBox": ""
+        }
+      },
+      {
+        "data": {
+          "app": "test-agent-5",
+          "cluster": "Kubernetes",
+          "healthData": {
+            "requests": {
+              "inbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "outbound": {
+                "http": {
+                  "200": 0.467
+                }
+              },
+              "healthAnnotations": {}
+            }
+          },
+          "id": "c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b",
+          "namespace": "default",
+          "nodeType": "service",
+          "destServices": [
+            {
+              "cluster": "Kubernetes",
+              "namespace": "default",
+              "name": "test-agent-5"
+            }
+          ],
+          "parent": "",
+          "traffic": [
+            {
+              "protocol": "http",
+              "rates": {
+                "httpIn": "0.47"
+              }
+            }
+          ],
+          "service": "test-agent-5",
+          "isBox": ""
+        }
+      }
+    ],
+    "edges": [
+      {
+        "data": {
+          "id": "9c4c8552233cb4bc349f189c307451b01053379012784eaecc7c80f537ce6d91",
+          "source": "4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df",
+          "target": "628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "3629a19e428a5786dd3779bec7e54c9f6c800a36edfd80a054ee7c3a48f7c62e",
+          "source": "4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df",
+          "target": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "e401a7516ac93d92dba664ca99a145ea323caec6c8eb79f40824da3b3d5a9450",
+          "source": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "target": "a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      },
+      {
+        "data": {
+          "id": "d83a671c2422370642570cefdbe4493e393bb2eef13f9e80ee3a5f24925deee0",
+          "source": "ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638",
+          "target": "c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b",
+          "traffic": {
+            "protocol": "http",
+            "rates": {
+              "http": "0.47",
+              "httpPercentReq": "50.0"
+            },
+            "200": {
+              "flags": null,
+              "hosts": null
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+2025/09/08 13:03:59 target: 628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746, source: 4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df, numTraget: 7, numSource: 6
+2025/09/08 13:03:59 target: ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638, source: 4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df, numTraget: 8, numSource: 6
+2025/09/08 13:03:59 target: a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9, source: ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638, numTraget: 9, numSource: 8
+2025/09/08 13:03:59 target: c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b, source: ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638, numTraget: 10, numSource: 8
+2025/09/08 13:03:59 获取到的流量映射: [[{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {true 1 0.47 0} {true 1 0.47 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {true 1 0.47 0} {true 1 0.47 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}] [{false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0} {false 0 0 0}]]
+2025/09/08 13:03:59 获取到的节点: [2f7a15a1cc1004a724c95b97d4901fa2588ef0125301b29802f9a9b96890ec84 ebe171afa07510750a97579cbb94399ceae7bf662fe7251e8160a810bfe81f22 349e29ffd91cfb91fb98b68d25428acd39dfd84717f10881c19e314760c8e97e 3689576da8a927f8dc174e787d75dff3c745e50e10fd9b00754f6987b89fdecc bb714c573c3904df3dbb967f1b2b87ac3069f9134b965533b5ee7a9ec851a029 30f7d9f51acbc66ba633591e01cdb2ab082ce8bfde944696586fd99e1b6051e0 4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df 628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746 ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638 a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9 c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b]
+2025/09/08 13:03:59 获取到的节点映射: map[2f7a15a1cc1004a724c95b97d4901fa2588ef0125301b29802f9a9b96890ec84:{0 default kubernetes } 30f7d9f51acbc66ba633591e01cdb2ab082ce8bfde944696586fd99e1b6051e0:{5 default test-agent-1 test-agent-1} 349e29ffd91cfb91fb98b68d25428acd39dfd84717f10881c19e314760c8e97e:{2 default productpage productpage} 3689576da8a927f8dc174e787d75dff3c745e50e10fd9b00754f6987b89fdecc:{3 default ratings ratings} 4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df:{6 default  test-agent-1} 628230990f8cb878c8db1a229f7264183d7c638863608d7ed86042869476f746:{7 default test-agent-2 test-agent-2} a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9:{9 default test-agent-4 test-agent-4} bb714c573c3904df3dbb967f1b2b87ac3069f9134b965533b5ee7a9ec851a029:{4 default reviews reviews} c2425401d2a5bde9f13cc2bad6dd56038700031304709ad805ad03db0d1aea5b:{10 default test-agent-5 test-agent-5} ebe171afa07510750a97579cbb94399ceae7bf662fe7251e8160a810bfe81f22:{1 default details details} ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638:{8 default test-agent-3 test-agent-3}]
+2025/09/08 13:03:59 获取到的根节点: [{6 default  test-agent-1}]
+2025/09/08 13:03:59 关键路径分析消耗的时间: 20.350712ms
+2025/09/08 13:03:59 path len : 3
+2025/09/08 13:03:59 critical Path: [4d445d0b3db92d4db627683a612c71709fca307ea84e14b0d230183e791991df ff899496292caadf2f6ee6ef39b792e64ebd6d0bcc362d365cf9a1d16f909638 a34e4cbe5e868db17067ec61ff28be0a20e82525ba34cc4e90f0a37d8568b9a9]
+2025/09/08 13:03:59 正在应用新的混淆策略...
+2025/09/08 13:03:59 创建或确保OA 0 在命名空间 default 中存在...
+下游节点配置: [[{traffic-service-1.default.svc.cluster.local:80 1 0.235 0} {test-agent-3.default.svc.cluster.local:80 1 0.235 0} {traffic-service-2.default.svc.cluster.local:80 1 0.235 0} {test-agent-4.default.svc.cluster.local:80 1 0.235 0}] [{traffic-service-2.default.svc.cluster.local:80 1 0.235 0} {test-agent-4.default.svc.cluster.local:80 1 0.235 0}] []]
+2025/09/08 13:03:59 Failed to create deployment 0: deployments.apps "traffic-service-0" already exists
+Deployment created successfully: traffic-service-0
+2025/09/08 13:03:59 Failed to create service 0: services "traffic-service-0" already exists
+2025/09/08 13:03:59 为OA 0 (traffic-service-0.default.svc.cluster.local) 设置下游节点...
+Service created successfully: traffic-service-0
+2025/09/08 13:03:59 请求头: map[Content-Type:[application/json] Host:[traffic-service-0.default.svc.cluster.local]]
+2025/09/08 13:03:59 Url: http://traffic-service-0.default.svc.cluster.local/set-nodes
+2025/09/08 13:03:59 请求体(Raw JSON): [{"DNS":"traffic-service-1.default.svc.cluster.local:80/api","ServiceNum":1,"Rps":0.235,"ErrorRate":0},{"DNS":"test-agent-3.default.svc.cluster.local:80/api","ServiceNum":1,"Rps":0.235,"ErrorRate":0},{"DNS":"traffic-service-2.default.svc.cluster.local:80/api","ServiceNum":1,"Rps":0.235,"ErrorRate":0},{"DNS":"test-agent-4.default.svc.cluster.local:80/api","ServiceNum":1,"Rps":0.235,"ErrorRate":0}]
+2025/09/08 13:03:59 Dest Service(目标服务): http://traffic-service-0.default.svc.cluster.local/set-nodes
+响应状态码: 200
+响应内容: Downstream nodes set and traffic restarted: [{traffic-service-1.default.svc.cluster.local:80/api 1 0.235 0} {test-agent-3.default.svc.cluster.local:80/api 1 0.235 0} {traffic-service-2.default.svc.cluster.local:80/api 1 0.235 0} {test-agent-4.default.svc.cluster.local:80/api 1 0.235 0}]
+
+2025/09/08 13:04:00 &{200 OK 200 HTTP/1.1 1 1 map[Content-Length:[21] Content-Type:[application/json] Date:[Mon, 08 Sep 2025 13:04:00 GMT] Server:[envoy] X-Envoy-Upstream-Service-Time:[1]] 0xc0000b42c0 21 [] false false map[] 0xc00025cc80 <nil>}
+2025/09/08 13:04:00 服务 http://traffic-service-0.default.svc.cluster.local/healthz 健康检查通过。
+2025/09/08 13:04:00 创建或确保OA 1 在命名空间 default 中存在...
+2025/09/08 13:04:00 Failed to create deployment 1: deployments.apps "traffic-service-1" already exists
+Deployment created successfully: traffic-service-1
+Service created successfully: traffic-service-1
+2025/09/08 13:04:00 Failed to create service 1: services "traffic-service-1" already exists
+2025/09/08 13:04:00 为OA 1 (traffic-service-1.default.svc.cluster.local) 设置下游节点...
+2025/09/08 13:04:00 请求头: map[Content-Type:[application/json] Host:[traffic-service-1.default.svc.cluster.local]]
+2025/09/08 13:04:00 Url: http://traffic-service-1.default.svc.cluster.local/set-nodes
+2025/09/08 13:04:00 请求体(Raw JSON): [{"DNS":"traffic-service-2.default.svc.cluster.local:80/api","ServiceNum":1,"Rps":0.235,"ErrorRate":0},{"DNS":"test-agent-4.default.svc.cluster.local:80/api","ServiceNum":1,"Rps":0.235,"ErrorRate":0}]
+2025/09/08 13:04:00 Dest Service(目标服务): http://traffic-service-1.default.svc.cluster.local/set-nodes
+响应状态码: 200
+响应内容: Downstream nodes set and traffic restarted: [{traffic-service-2.default.svc.cluster.local:80/api 1 0.235 0} {test-agent-4.default.svc.cluster.local:80/api 1 0.235 0}]
+
+2025/09/08 13:04:00 &{200 OK 200 HTTP/1.1 1 1 map[Content-Length:[21] Content-Type:[application/json] Date:[Mon, 08 Sep 2025 13:04:00 GMT] Server:[envoy] X-Envoy-Upstream-Service-Time:[0]] 0xc000432cc0 21 [] false false map[] 0xc0001e5400 <nil>}
+2025/09/08 13:04:00 服务 http://traffic-service-1.default.svc.cluster.local/healthz 健康检查通过。
+2025/09/08 13:04:00 创建或确保OA 2 在命名空间 default 中存在...
+Deployment created successfully: traffic-service-2
+2025/09/08 13:04:00 Failed to create deployment 2: deployments.apps "traffic-service-2" already exists
+2025/09/08 13:04:00 Failed to create service 2: services "traffic-service-2" already exists
+2025/09/08 13:04:00 未为OA 2 配置下游节点。跳过设置。
+Service created successfully: traffic-service-2
+2025/09/08 13:04:00 &{200 OK 200 HTTP/1.1 1 1 map[Content-Length:[21] Content-Type:[application/json] Date:[Mon, 08 Sep 2025 13:04:00 GMT] Server:[envoy] X-Envoy-Upstream-Service-Time:[4]] 0xc00013b680 21 [] false false map[] 0xc000527900 <nil>}
+2025/09/08 13:04:00 服务 http://traffic-service-2.default.svc.cluster.local/healthz 健康检查通过。
+2025/09/08 13:04:00 创建或确保 EnvoyFilter traffic-service-0 在命名空间 default 中存在...
+W0908 13:04:00.163481       1 warnings.go:70] EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+EnvoyFilter default/filter-confusion-headertraffic-service-0 已存在，无需创建。
+2025/09/08 13:04:00 创建或确保 EnvoyFilter traffic-service-1 在命名空间 default 中存在...
+W0908 13:04:00.167628       1 warnings.go:70] EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+2025/09/08 13:04:00 创建或确保 EnvoyFilter traffic-service-2 在命名空间 default 中存在...
+EnvoyFilter default/filter-confusion-headertraffic-service-1 已存在，无需创建。
+W0908 13:04:00.171137       1 warnings.go:70] EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+2025/09/08 13:04:00 创建或确保 EnvoyFilter test-agent-3 在命名空间 default 中存在...
+EnvoyFilter default/filter-confusion-headertraffic-service-2 已存在，无需创建。
+W0908 13:04:00.175429       1 warnings.go:70] EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+2025/09/08 13:04:00 创建或确保 EnvoyFilter test-agent-4 在命名空间 default 中存在...
+EnvoyFilter default/filter-confusion-headertest-agent-3 已存在，无需创建。
+W0908 13:04:00.179511       1 warnings.go:70] EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+2025/09/08 13:04:00 创建或确保根 EnvoyFilter (App: test-agent-1, Namespace: default) 指向 traffic-service-0.default.svc.cluster.local 存在...
+EnvoyFilter default/filter-confusion-headertest-agent-4 已存在，无需创建。
+W0908 13:04:00.183371       1 warnings.go:70] EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+2025/09/08 13:04:00 无法创建 EnvoyFilter: envoyfilters.networking.istio.io "filter-confusion-header-root" already exists

@@ -17,7 +17,7 @@ type PathInfo struct {
 func GetCriticalPaths() (float64, []string, map[string]TrafficNode, []CriticalPathNodeMetric) {
 	// 1. 获取原始拓扑
 	// 记录关键路径计算开始时间
-	startTime := time.Now()
+
 	root := topo.GetTopo()
 	jsonData, _ := json.MarshalIndent(root, "", "  ") // 使用两个空格作为缩进
 	log.Println("获取到的原始拓扑:", string(jsonData))
@@ -39,7 +39,7 @@ func GetCriticalPaths() (float64, []string, map[string]TrafficNode, []CriticalPa
 	log.Println("获取到的根节点:", rootNodes)
 
 	// 2. 计算关键路径并返回
-
+	startTime := time.Now()
 	maxSum, path, criticalPathNodeMetrics := FindCriticalPath(trafficMap, nodes, nodesMap, rootNodes, SERVICE_DEPENDENCY)
 
 	// 记录关键路径计算结束时间
